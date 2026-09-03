@@ -11,15 +11,21 @@ import { requestId } from './middleware/request-id.js';
 import { notFound } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { apiRouter } from './routes/index.js';
+import type { AuthDependencies } from './routes/auth.js';
 
 export function createApp(
   config: Config,
   isReady: () => boolean = () => false,
+  auth?: AuthDependencies,
 ) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', false);
   app.use(requestId);
+  app.use('/api/v1/auth', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
   app.use(
     pinoHttp({
       logger: createLogger(config),
@@ -34,7 +40,12 @@ export function createApp(
   );
   app.use(helmet());
   app.use(
-    cors({ origin: config.CLIENT_ORIGIN, exposedHeaders: ['X-Request-ID'] }),
+    cors({
+      origin: (origin, done) => done(null, origin === config.CLIENT_ORIGIN),
+      credentials: true,
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Protection'],
+      exposedHeaders: ['X-Request-ID'],
+    }),
   );
   app.use(compression());
   app.use(
@@ -61,7 +72,7 @@ export function createApp(
   app.use(
     express.urlencoded({ extended: false, limit: '16kb', parameterLimit: 100 }),
   );
-  app.use('/api/v1', apiRouter(config, isReady));
+  app.use('/api/v1', apiRouter(config, isReady, auth));
   app.use(notFound);
   app.use(errorHandler);
   return app;

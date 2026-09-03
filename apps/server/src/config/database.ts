@@ -18,9 +18,13 @@ export interface DatabaseManager {
 }
 
 export function createMongooseAdapter(config: DatabaseConfig): DatabaseAdapter {
+  return createMongooseContext(config).adapter;
+}
+
+export function createMongooseContext(config: DatabaseConfig) {
   const instance = new Mongoose();
   const connection = instance.createConnection();
-  return {
+  const adapter: DatabaseAdapter = {
     async open() {
       await connection.openUri(config.MONGODB_URI, {
         serverSelectionTimeoutMS: 30_000,
@@ -56,6 +60,7 @@ export function createMongooseAdapter(config: DatabaseConfig): DatabaseAdapter {
       };
     },
   };
+  return { adapter, connection };
 }
 
 export function createDatabaseManager(

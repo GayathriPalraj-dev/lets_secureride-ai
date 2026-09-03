@@ -2,7 +2,7 @@
 
 ## Boundaries and request flow
 
-The client owns presentation and public configuration. The server owns HTTP policy and future private services. Contracts define only health response and API envelope types.
+The client owns presentation and public configuration. The server owns HTTP policy and future private services. Contracts define health, authentication DTO, and API envelope types without runtime code.
 
 Browser → Vite development proxy → Express /api/v1 → health route → typed JSON envelope. The client checks incoming health data before displaying it. React Router supports a home page and a fallback page.
 
@@ -18,7 +18,7 @@ The health endpoint is liveness only. Step 3 adds `/api/v1/health/ready`, using 
 
 ## Configuration and future AWS compatibility
 
-HTTP and database configuration are validated separately. Startup requires server-only database configuration, connects before listening, and closes HTTP before disconnecting. Future JWT, Stripe, and AWS secrets are neither needed nor consumed. Examples are documentation, not deployed credentials. See [MongoDB lifecycle and manual setup](mongodb-atlas.md).
+HTTP and database configuration are validated separately. Startup requires server-only database configuration, connects before listening, and closes HTTP before disconnecting. Step 4 also requires and uses private authentication signing and limiter configuration; Stripe and AWS placeholders remain unused. Private .env files remain ignored and untracked. Secret values must never be committed, logged, or documented; examples contain placeholders only. The implemented rotation configuration supports a current signing key identifier/secret and an optional paired previous identifier/secret, with an independent limiter secret. See [MongoDB lifecycle and manual setup](mongodb-atlas.md) and [authentication architecture](authentication.md).
 
 A future private S3/CloudFront frontend can serve the static client build. A future CloudFront API origin can route /api to Nginx/EC2 and the Express service managed by PM2. The current relative API URL supports that same-origin pattern.
 
@@ -27,3 +27,7 @@ Future Atlas, car-image S3, Secrets Manager/Parameter Store, CloudWatch, CloudTr
 ## Validation
 
 Server tests cover health contracts, request IDs, 404s, safe internal errors, body limits, CORS, rate limits, and environment validation. Client tests cover the heading, loading, success, network/HTTP failure, and malformed responses with mocked network calls.
+
+## Step 4 authentication boundary
+
+Contracts now include public user and authentication response types. Authentication dependencies are injected into the app factory; production startup uses the existing isolated connection for User, AuthSession, and AuthRateLimit. It validates auth configuration and checks explicitly provisioned indexes before listening. CORS supports exact-origin credentialed authentication requests. See [authentication architecture](authentication.md). Step 4 adds no deployment or RBAC implementation.

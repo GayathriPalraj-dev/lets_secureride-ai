@@ -1,6 +1,6 @@
 # MongoDB Atlas foundation
 
-Step 3 adds connection lifecycle management only. No schemas, collections, seed data, or database writes are implemented. This guide describes actions for the developer to perform manually; the implementation agent has not created Atlas resources. Subsequent explicitly approved runtime verification may connect to the existing cluster without creating application data.
+Historical Step 3 scope was connection lifecycle management only, without schemas, collections, seed data, or database writes. The manual setup and runtime migration sections below retain that context. Step 4 later introduced authentication models and separately approved provisioning, acceptance, and cleanup operations, recorded at the end of this guide. No Atlas infrastructure, database-user, network-access, or DNS changes were made by those authentication operations.
 
 ## Manual setup
 
@@ -90,3 +90,19 @@ Expected versions: Node v24.20.0, npm 11.19.0, c-ares 1.34.8. Then use the healt
 The migration stages official installers and exact pre-migration copies of the six approved files under `%TEMP%\lets-secureride-ai-node24-migration`. If migration validation fails, stop its temporary server, uninstall the newly installed Node 24 runtime with its official MSI, and reinstall the checksum-verified Node 22.23.1 MSI. Verify Node v22.23.1 and bundled npm 10.9.8 and their executable paths in a fresh terminal.
 
 Restore only migration changes to `.nvmrc`, root `package.json`, root `package-lock.json`, `README.md`, this guide, and `docs/evidence/README.md` from those backups, preserving pre-existing and intervening user edits. Do not use Git reset or restore. Run `npm ci` with the restored lockfile and repeat the quality gates. Returning to the old runtime also returns its observed Windows DNS limitation; do not silently apply a DNS override. Keep temporary backups until the migration is accepted.
+
+## Step 4 provisioning boundary
+
+Authentication introduces User, AuthSession, and AuthRateLimit model definitions with named indexes. Automatic creation remains disabled. Normal startup verifies those indexes; missing indexes fail safely. The explicit auth:indexes operator command is documented in [authentication architecture](authentication.md). Separately approved --apply provisioning and independent --check verification succeeded. No destructive index synchronization was used, and provisioning created no test users or sessions.
+
+Verified index properties:
+
+- users.auth_user_email_unique: email: 1, unique.
+- auth_sessions.auth_session_user_revoked: userId: 1 followed by revokedAt: 1.
+- auth_sessions.auth_session_expiry: absoluteExpiresAt: 1, expireAfterSeconds: 0.
+- auth_rate_limits.auth_limit_expiry: expiresAt: 1, expireAfterSeconds: 0.
+- Automatic unique _id_ indexes were verified on all three collections.
+
+Real index checks occurred only through separately approved database operations, including verification after acceptance and cleanup. Automated tests remain isolated from Atlas. Private authentication setup occurred under its own approval; private values are excluded from this guide.
+
+The later manual-browser cleanup transaction removed 1 disposable customer, 4 owned sessions, and 2 conclusively attributable limiter records. Independent verification confirmed target removal and unchanged unrelated record identities/counts and indexes. One unattributed limiter record was retained for natural TTL expiration. Its current status has not been rechecked; no claim is made that all authentication collections are currently empty. Future database operations continue to require separate approval.

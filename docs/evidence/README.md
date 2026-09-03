@@ -68,3 +68,88 @@ The explicitly approved real Atlas smoke test used one temporary compiled server
 Only the six approved project files were changed by this migration. Pre-existing Step 3 changes were preserved; nothing was committed or pushed. No controlled rollback was required. Installers, backups, and npm cache remain in the approved temporary staging directory for rollback until acceptance. Step 4 remains unstarted.
 
 Final combined gate: `npm run check` passed with exit code 0, including formatting, lint, all-workspace typechecking, all 49 tests, and all three builds. A final formatting check after recording this result also passed.
+
+## Step 4 authentication evidence
+
+Historical implementation-only record: the statements in this section describe the initial offline implementation boundary. Later separately approved operations and their results are recorded in the following sections; they do not retroactively change the original approval scope.
+
+Implementation uses the approved files and three pinned server dependencies. The native Argon2 probe passed without system tools or install-policy changes. Existing dependency versions were compared against the Step 3 lockfile and remain unchanged. npm initially reported zero vulnerabilities plus install-script warnings for Argon2 and the existing esbuild package; native hashing and subsequent gates are verified separately.
+
+The first full test pass exposed a recursion bug in a test spy used to simulate concurrent account invalidation; the fixture was corrected without changing the intended assertion. Initial type/lint findings were resolved within approved files. Database errors remain sanitized rather than retaining potentially sensitive driver causes.
+
+Automated tests do not read a private environment file, connect to Atlas, create real accounts, or provision indexes. Real MongoDB atomicity/uniqueness/TTL and deployed browser behavior remain explicit acceptance gates. Step 5, private setup, services, commits, and pushes have not begun.
+
+Final validation on 2026-09-03, Node 24.20.0 / npm 11.19.0:
+
+| Gate                                | Result                                          |
+| ----------------------------------- | ----------------------------------------------- |
+| Formatting verification             | Passed, including final documentation           |
+| Lint                                | Passed                                          |
+| Typecheck                           | All three workspaces passed                     |
+| Tests                               | 258 passed: 213 server and 45 client            |
+| Existing regression tests           | All original 49 preserved                       |
+| Added tests                         | 209                                             |
+| Build                               | Contracts, server, and client passed            |
+| Combined check                      | Passed, exit code 0                             |
+| Production audit                    | Zero vulnerabilities                            |
+| Full audit                          | Zero vulnerabilities                            |
+| Diff whitespace check               | Passed                                          |
+| File scope                          | Exactly 42 new and 18 modified approved files   |
+| Existing locked dependency versions | Unchanged                                       |
+| Secret-pattern scan                 | No findings in tracked and approved new content |
+
+The final suite additionally checks normal-query exclusion of sensitive material, Web Locks usage, logout-only broadcasts and cleanup, delayed-user-response cancellation, and access refresh before logout-all. Initial failures were corrected without editing the original 49 tests or weakening their assertions.
+
+Warnings: npm reported existing esbuild and new Argon2 install-script approval warnings; no policy setting changed and Argon2 loaded and hashed successfully. Git reports its existing LF-to-CRLF conversion warnings; Git configuration is unchanged. Real database/browser verification is not represented by the isolated test count.
+
+Private configuration remains untouched and ignored. No Atlas provisioning, account creation, service startup, commit, push, or Step 5 work occurred. The working tree intentionally contains the reviewed implementation changes awaiting a separately approved checkpoint.
+
+## Subsequent Step 4 setup and real API acceptance
+
+Separate explicit approvals covered private authentication settings generation and validation, followed by authentication index provisioning and independent verification. Values were not displayed or recorded. Provisioning created the approved collections/indexes without test users or sessions or destructive synchronization. Automatic _id_ indexes and the named unique, compound, and TTL definitions passed verification.
+
+Real Atlas authentication API acceptance passed 73 assertions with 0 failures. One temporary backend and isolated disposable data were used. Checks covered health/readiness, canonical-email uniqueness under concurrent registration, customer-only registration, Argon2id verification, safe login failures and DTOs, cookie attributes, authenticated identity, refresh rotation/replay, logout/logout-all, CSRF/CORS/content type, and HMAC-derived limiter storage. This was separate from the offline suite. The optional TTL deletion probe was not attempted.
+
+API acceptance created and removed 2 disposable users, 4 sessions, and 13 limiter records using captured ownership. At that cleanup verification, all three collections returned to their empty pre-run state. This historical observation does not describe the database after later browser testing. Connections closed, the backend stopped gracefully, port 5000 closed, and the temporary harness was removed.
+
+## Recorded manual-browser observations
+
+The user explicitly supplied the following observations from the separately approved manual exercise. These are recorded manual observations, not automated browser capture, HAR evidence, or secret screenshots:
+
+- Unauthenticated /account redirected to Sign in.
+- Short-password validation prevented registration.
+- Disposable customer registration succeeded.
+- The account displayed the expected email and Role: customer.
+- Reload restored the session.
+- Another tab in the same private window restored the session.
+- Sign-out removed access from both same-browser tabs.
+- Duplicate registration produced a safe failure.
+- An incorrect password produced a generic safe error.
+- The correct password signed in successfully.
+- Two genuinely separate browsers signed in.
+- Sign out all devices invalidated both browser sessions after the second browser's next request.
+- Both services were stopped and ports 5000/5173 were confirmed closed.
+
+No additional browser behavior or production deployment acceptance is inferred from these observations.
+
+## Exact-record manual-browser cleanup
+
+One verified transaction removed 1 disposable customer, 4 owned authentication sessions, and 2 conclusively attributable limiter records. Exact target ownership and deletion counts were checked before commit. Independent verification through a separate connection confirmed the user and owned sessions were absent, deleted limiter IDs were absent, and unrelated record identities/counts and authentication indexes were unchanged. The existing index check passed.
+
+One unattributed limiter record was retained for natural TTL expiration. Its current TTL status remains unverified. No claim is made that all authentication collections are currently empty. Database connections closed, the temporary harness was removed, no services started during cleanup, and ports 5000/5173 remained closed. No project or private configuration files changed during cleanup.
+
+## Final offline checkpoint assessment before documentation correction
+
+On 2026-09-03, Node 24.20.0 / npm 11.19.0, the direct test retry passed 258 tests: 45 client and 213 server, with 0 failed and 0 skipped. All original 49 regression tests remained present, unchanged, and passing. The repeated combined-check tests were not added to this total.
+
+Formatting, lint, typecheck, build, combined check, and git diff --check passed with exit code 0. Both production and full audits reported zero vulnerabilities. The initial direct test command exited 1 because frontend workers timed out before running tests; its unchanged retry with process permission exited 0. The initial production audit exited 1 because registry access failed; its unchanged network-permission retry exited 0. Existing LF-to-CRLF warnings did not indicate whitespace errors. No test, timeout, dependency, or network configuration was changed.
+
+The actual recovered planning report matched exactly 42 new and 18 modified files. Only argon2 0.45.1, jose 6.2.10, and cookie 2.0.1 were added as direct dependencies; existing versions were unchanged. Secret-pattern scans of the 60 checkpoint files found no concerns. Git metadata confirmed private environment files were ignored and untracked. All 112 checked project files stayed unchanged during that read-only assessment. Tests never loaded private configuration or connected to Atlas; no services started.
+
+That assessment returned NOT READY because seven documentation files still described the original implementation boundary as current status. The separately approved documentation correction preserves those historical records and adds the later evidence above. Step 4 remains uncommitted; Step 5 and production acceptance remain pending.
+
+## Documentation correction and offline revalidation
+
+The seven approved Markdown files were corrected on 2026-09-03. Formatting verification, lint, typecheck, direct tests, build, combined check, production audit, full audit, and diff whitespace verification all passed with exit code 0. The direct test run reported 258 passed, 0 failed, 0 skipped: 45 client and 213 server, including the unchanged original 49 regression tests. Combined-check repetitions are excluded from the total. Both audits reported zero vulnerabilities. Process/network permissions were used for previously established sandbox limitations; this correction run required no failed-command retry. Git emitted its existing LF-to-CRLF warnings. No automatic formatter or fixer was run.
+
+The approved checkpoint remains 42 new and 18 modified files. Fingerprints confirmed that only the seven authorized documentation files changed during correction. Dependency manifests and lockfile stayed unchanged; the server resolves argon2 0.45.1, jose 6.2.10, and cookie 2.0.1. The 60-file secret-pattern scan found no concerns, and private files remain ignored and untracked. Offline tests remained isolated from Atlas and private configuration. No live database, TTL, service-start, staging, commit, push, or Step 5 operation formed part of this correction. Final report verification covers the completed evidence text and service ports.

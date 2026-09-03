@@ -1,4 +1,22 @@
 export type Environment = 'development' | 'test' | 'production';
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: 'customer' | 'admin';
+}
+export interface AuthCredentials {
+  email: string;
+  password: string;
+}
+export interface AuthTokenData {
+  user: AuthUser;
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+}
+export type AuthTokenResponse = ApiSuccess<AuthTokenData>;
+export type AuthUserResponse = ApiSuccess<{ user: AuthUser }>;
+export type AuthLogoutResponse = ApiSuccess<{ loggedOut: true }>;
 
 export interface ApiSuccess<T> {
   success: true;
