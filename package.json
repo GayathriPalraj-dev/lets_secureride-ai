@@ -1,0 +1,36 @@
+{
+  "name": "lets_secureride-ai",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.23.1 <23",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev:client": "npm run dev --workspace @lets-secureride-ai/client",
+    "dev:server": "npm run dev --workspace @lets-secureride-ai/server",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspace @lets-secureride-ai/contracts && npm run build --workspace @lets-secureride-ai/server && npm run build --workspace @lets-secureride-ai/client",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "eslint": "10.9.1",
+    "@eslint/js": "10.0.1",
+    "typescript-eslint": "8.69.0",
+    "globals": "17.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.6",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.6"
+  }
+}

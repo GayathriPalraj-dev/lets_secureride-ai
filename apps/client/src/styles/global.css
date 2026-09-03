@@ -1,0 +1,81 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #182b36;
+  background: #f4f7f8;
+  line-height: 1.6;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header,
+main,
+footer {
+  max-width: 58rem;
+  margin: auto;
+  padding: 1.5rem;
+}
+header {
+  padding-top: 3rem;
+}
+h1 {
+  font-size: clamp(1.6rem, 5vw, 2.8rem);
+  overflow-wrap: anywhere;
+}
+h1,
+h2 {
+  line-height: 1.2;
+}
+.eyebrow {
+  color: #405563;
+}
+.health {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #b7c8ce;
+  border-radius: 0.5rem;
+  background: white;
+}
+dl {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) 3fr;
+  gap: 0.6rem 1rem;
+}
+dt {
+  font-weight: 600;
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+a {
+  color: #075b83;
+}
+:focus-visible {
+  outline: 3px solid #075b83;
+  outline-offset: 4px;
+}
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -5rem;
+  padding: 0.5rem;
+  background: white;
+}
+.skip-link:focus {
+  top: 0.5rem;
+}
+[role='alert'] {
+  color: #8b2020;
+}
+footer {
+  font-size: 0.9rem;
+  color: #405563;
+}
+@media (max-width: 400px) {
+  dl {
+    grid-template-columns: 1fr;
+  }
+}
