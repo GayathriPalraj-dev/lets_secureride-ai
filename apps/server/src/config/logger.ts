@@ -12,6 +12,12 @@ export function createLogger(config: Config) {
       'authorization',
       'password',
       'token',
+      'MONGODB_URI',
+      'uri',
+      'config',
+      'databaseConfig',
+      'err',
+      'error',
     ],
   });
 }

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { mongo } from 'mongoose';
+import { checkServerIdentity } from 'node:tls';
 
 const schema = z.object({
   NODE_ENV: z
@@ -28,4 +30,49 @@ export function parseEnv(input: Record<string, unknown>): Config {
     throw new Error('Invalid configuration fields: ' + fields.join(', '));
   }
   return result.data;
+}
+
+export interface DatabaseConfig {
+  MONGODB_URI: string;
+}
+
+// MongoClient construction parses options only: no connect(), DNS, or sockets.
+export function parseDatabaseEnv(
+  input: Record<string, unknown>,
+): DatabaseConfig {
+  const value = input.MONGODB_URI;
+  const invalid = () => new Error('Invalid configuration fields: MONGODB_URI');
+  if (
+    typeof value !== 'string' ||
+    !value ||
+    /\s/.test(value) ||
+    [...value].some(
+      (character) =>
+        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+    ) ||
+    !/^mongodb(?:\+srv)?:\/\//.test(value) ||
+    /USERNAME:PASSWORD@|HOST\.invalid|^replace_later$|[<>]/i.test(value)
+  ) {
+    throw invalid();
+  }
+  try {
+    const client = new mongo.MongoClient(value);
+    const options = client.options;
+    if (
+      options.dbName !== 'lets_secureride_ai' ||
+      options.tlsAllowInvalidCertificates ||
+      options.tlsAllowInvalidHostnames ||
+      options.tlsInsecure ||
+      options.rejectUnauthorized === false ||
+      (options.checkServerIdentity !== undefined &&
+        options.checkServerIdentity !== checkServerIdentity) ||
+      (value.startsWith('mongodb+srv://') && options.tls === false) ||
+      (input.NODE_ENV === 'production' && options.tls !== true)
+    ) {
+      throw invalid();
+    }
+  } catch {
+    throw invalid();
+  }
+  return { MONGODB_URI: value };
 }

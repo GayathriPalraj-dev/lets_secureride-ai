@@ -12,7 +12,10 @@ import { notFound } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { apiRouter } from './routes/index.js';
 
-export function createApp(config: Config) {
+export function createApp(
+  config: Config,
+  isReady: () => boolean = () => false,
+) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', false);
@@ -58,7 +61,7 @@ export function createApp(config: Config) {
   app.use(
     express.urlencoded({ extended: false, limit: '16kb', parameterLimit: 100 }),
   );
-  app.use('/api/v1', apiRouter(config));
+  app.use('/api/v1', apiRouter(config, isReady));
   app.use(notFound);
   app.use(errorHandler);
   return app;
