@@ -14,6 +14,7 @@ import { createPasswordService } from './auth/password-service.js';
 import { createTokenService } from './auth/token-service.js';
 import { createAuthService } from './auth/service.js';
 import { createAuthEvents } from './auth/events.js';
+import { createAuthorizationEvents } from './authorization/events.js';
 
 async function main() {
   // Configuration errors are handled at this boundary, never printed as raw exceptions.
@@ -73,6 +74,9 @@ async function main() {
   const events = createAuthEvents((event) =>
     logger.info(event, 'Authentication event'),
   );
+  const authorizationEvents = createAuthorizationEvents((event) =>
+    logger.info(event, 'Authorization event'),
+  );
   const service = createAuthService(
     repo,
     passwords,
@@ -96,13 +100,16 @@ async function main() {
   );
   const server = createServer(
     createApp(config, () => lifecycle.isReady(), {
-      service,
-      repo,
-      tokens,
-      config: authConfig,
-      events,
-      production: config.NODE_ENV === 'production',
-      origin: config.CLIENT_ORIGIN,
+      auth: {
+        service,
+        repo,
+        tokens,
+        config: authConfig,
+        events,
+        production: config.NODE_ENV === 'production',
+        origin: config.CLIENT_ORIGIN,
+      },
+      authorizationEvents,
     }),
   );
   const lifecycle: ReturnType<typeof createLifecycle> = createLifecycle({

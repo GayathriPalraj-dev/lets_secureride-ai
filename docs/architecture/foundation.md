@@ -31,3 +31,9 @@ Server tests cover health contracts, request IDs, 404s, safe internal errors, bo
 ## Step 4 authentication boundary
 
 Contracts now include public user and authentication response types. Authentication dependencies are injected into the app factory; production startup uses the existing isolated connection for User, AuthSession, and AuthRateLimit. It validates auth configuration and checks explicitly provisioned indexes before listening. CORS supports exact-origin credentialed authentication requests. See [authentication architecture](authentication.md). Step 4 adds no deployment or RBAC implementation.
+
+## Step 5 authorization boundary
+
+Step 5 adds shared role typing, a fail-closed Express role guard, a durable read-only admin access endpoint, controlled offline role management, and a server-verified React admin route. It changes no schema, collection, index, dependency, or JWT claim. See [RBAC architecture](rbac.md).
+
+The approved Step 5 scope is exactly 19 new and 24 modified files. Offline validation passes 333 tests: the preserved 258-test baseline plus 75 isolated RBAC cases in seven Step 5 test files. Real Atlas acceptance remains partial: 48 assertions passed before the first role transition completed, and later attempts failed during server selection before target lookup. Retained disposable records require separately approved cleanup.

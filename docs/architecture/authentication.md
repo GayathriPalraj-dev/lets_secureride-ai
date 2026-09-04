@@ -1,6 +1,6 @@
 # Step 4 secure authentication
 
-Status: Step 4 is implemented and validated, awaiting its Git checkpoint. Private configuration, Atlas index provisioning/checking, real API acceptance, recorded manual-browser acceptance, and disposable-data cleanup subsequently completed under separate approvals. Production/deployment verification remains pending. No commit, push, or Step 5 work is authorized by offline validation.
+Status: Step 4 is implemented, validated, and committed. Private configuration, Atlas index provisioning/checking, real API acceptance, recorded manual-browser acceptance, and disposable-data cleanup completed under separate approvals. Step 5 RBAC is implemented and validated offline but is not yet committed. Its real Atlas role-transition acceptance and retained-record cleanup remain pending. Production/deployment verification remains pending.
 
 ## Boundaries
 
@@ -103,6 +103,8 @@ Only argon2 0.45.1, jose 6.2.10, and cookie 2.0.1 were added as direct server de
 
 Tests use isolated fake repositories, clocks, mocked fetch, disconnected Mongoose instances, and focused real cryptography. Offline validation passed 258 tests: 45 client and 213 server, with 0 failed and 0 skipped, including all original 49 regression tests. These tests never load private configuration, connect to Atlas, or provision real indexes. Repository contracts and model declarations alone do not prove real MongoDB atomicity, uniqueness, or TTL deletion.
 
+Step 5 preserves these 258 tests and adds 75 isolated RBAC cases across seven test files, producing 333 passing tests. It adds no authentication dependency, schema, collection, index, or migration. Real role-transition acceptance remains pending; see [RBAC architecture](rbac.md).
+
 Separately approved real Atlas API acceptance passed 73 assertions with 0 failures using disposable data. It verified concurrent canonical-email registration, persisted rotation state, replay revocation, logout/logout-all, safe responses, transport controls, and limiter storage. API-run data was removed and cleanup independently verified. Recorded manual-browser observations covered registration, safe errors, sign-in, restoration, protected routing, same-browser cross-tab sign-out, and logout-all across separate browsers. These user-recorded observations are not automated browser capture; their exact scope is listed in [validation evidence](../evidence/README.md).
 
 Subsequent manual-browser cleanup committed one transaction deleting 1 disposable customer, 4 owned sessions, and 2 conclusively attributable limiter records. One unattributed limiter record was retained for natural TTL expiration; its current TTL status remains unverified. Production HTTPS cookie/CORS/CSP behavior, deployment topology, native runtime capacity, real concurrent-refresh race behavior, and TTL deletion observation remain future verification work. No production acceptance or current collection-wide emptiness is claimed.
@@ -122,3 +124,9 @@ Deferred: email verification, password recovery/change, MFA, social login, profi
 - [RFC 9700 refresh-token security](https://www.rfc-editor.org/rfc/rfc9700.html)
 - [MongoDB atomicity](https://www.mongodb.com/docs/manual/core/write-operations-atomicity/)
 - [MongoDB TTL behavior](https://www.mongodb.com/docs/manual/core/index-ttl/)
+
+## Authorization boundary
+
+Authentication continues to load the current user and session and validate status, revocation, expiry, and `authVersion`. Access tokens carry no role claim. Authorization then evaluates the current MongoDB-backed role through fail-closed policy middleware. Role changes atomically increment `authVersion`, so promotion never upgrades an existing customer session and demotion invalidates existing administrator access.
+
+See [RBAC architecture](rbac.md) for the admin access boundary and offline role-management lifecycle.

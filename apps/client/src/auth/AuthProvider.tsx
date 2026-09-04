@@ -66,6 +66,18 @@ export function AuthProvider({
         throw new AuthError(503, 'LOGOUT_UNCONFIRMED');
       }
     },
+    async verifyAdminAccess() {
+      try {
+        await session.verifyAdminAccess();
+      } catch (failure) {
+        if (failure instanceof AuthError && failure.status === 401) {
+          session.clear();
+          setUser(null);
+          setStatus('unauthenticated');
+        }
+        throw failure;
+      }
+    },
     retry() {
       setError(null);
       setStatus('loading');

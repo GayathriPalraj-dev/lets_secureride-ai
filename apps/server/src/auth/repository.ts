@@ -1,4 +1,5 @@
 import type { Connection } from 'mongoose';
+import type { Role } from '@lets-secureride-ai/contracts';
 import { AppError } from '../utils/app-error.js';
 import { createUserModel } from '../models/user.js';
 import { createSessionModel } from '../models/auth-session.js';
@@ -7,7 +8,7 @@ export interface UserRecord {
   id: string;
   email: string;
   passwordHash: string;
-  role: 'customer' | 'admin';
+  role: Role;
   status: 'active' | 'disabled';
   authVersion: number;
 }

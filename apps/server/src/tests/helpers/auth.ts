@@ -124,13 +124,16 @@ export function fixture(production = false) {
     LOG_LEVEL: 'silent',
   });
   const app = createApp(httpConfig, () => true, {
-    repo,
-    service,
-    tokens,
-    config,
-    events,
-    production,
-    origin: httpConfig.CLIENT_ORIGIN,
+    auth: {
+      repo,
+      service,
+      tokens,
+      config,
+      events,
+      production,
+      origin: httpConfig.CLIENT_ORIGIN,
+    },
+    authorizationEvents: events,
   });
   async function account() {
     const registered = await service.register(

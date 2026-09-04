@@ -11,12 +11,12 @@ import { requestId } from './middleware/request-id.js';
 import { notFound } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { apiRouter } from './routes/index.js';
-import type { AuthDependencies } from './routes/auth.js';
+import type { ApiDependencies } from './routes/index.js';
 
 export function createApp(
   config: Config,
   isReady: () => boolean = () => false,
-  auth?: AuthDependencies,
+  dependencies?: ApiDependencies,
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -72,7 +72,7 @@ export function createApp(
   app.use(
     express.urlencoded({ extended: false, limit: '16kb', parameterLimit: 100 }),
   );
-  app.use('/api/v1', apiRouter(config, isReady, auth));
+  app.use('/api/v1', apiRouter(config, isReady, dependencies));
   app.use(notFound);
   app.use(errorHandler);
   return app;

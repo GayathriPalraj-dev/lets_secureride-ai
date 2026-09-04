@@ -1,8 +1,9 @@
 export type Environment = 'development' | 'test' | 'production';
+export type Role = 'customer' | 'admin';
 export interface AuthUser {
   id: string;
   email: string;
-  role: 'customer' | 'admin';
+  role: Role;
 }
 export interface AuthCredentials {
   email: string;
@@ -17,6 +18,10 @@ export interface AuthTokenData {
 export type AuthTokenResponse = ApiSuccess<AuthTokenData>;
 export type AuthUserResponse = ApiSuccess<{ user: AuthUser }>;
 export type AuthLogoutResponse = ApiSuccess<{ loggedOut: true }>;
+export interface AdminAccessData {
+  authorized: true;
+}
+export type AdminAccessResponse = ApiSuccess<AdminAccessData>;
 
 export interface ApiSuccess<T> {
   success: true;

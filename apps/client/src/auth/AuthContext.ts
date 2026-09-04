@@ -7,6 +7,7 @@ export interface AuthState {
   login(credentials: AuthCredentials): Promise<void>;
   register(credentials: AuthCredentials): Promise<void>;
   logout(all?: boolean): Promise<void>;
+  verifyAdminAccess?(): Promise<void>;
   retry(): void;
 }
 export const AuthContext = createContext<AuthState | null>(null);

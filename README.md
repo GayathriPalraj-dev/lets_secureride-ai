@@ -1,14 +1,18 @@
 # lets_secureride-ai
 
-A production-style MERN car-booking application in development. Steps 1–3 are complete and committed. Step 4 secure authentication is implemented and validated but not yet committed; the complete application and production deployment remain future work.
+A production-style MERN car-booking application in development. Steps 1–4 are complete and committed. Step 5 RBAC is implemented and validated offline but has not yet been committed; the complete application and production deployment remain future work.
 
 ## Scope and status
 
-The foundation provides a React/TypeScript client, Express/TypeScript API, type-only shared contracts, basic security middleware, and a tested Mongoose connection lifecycle. Authentication models, session services, and minimal account pages are implemented. No real authentication collections or data were created during implementation. RBAC, cars, bookings, payments, uploads, and deployment remain deferred. Liveness reports process health; the separate readiness endpoint reports database availability.
+The foundation provides a React/TypeScript client, Express/TypeScript API, type-only shared contracts, basic security middleware, and a tested Mongoose connection lifecycle. Authentication models, session services, minimal account pages, database-authoritative customer/admin authorization, a durable admin access boundary, and controlled role management are implemented. Cars, bookings, payments, uploads, and deployment remain deferred. Liveness reports process health; the separate readiness endpoint reports database availability.
 
 After implementation, separate approvals covered private authentication configuration, authentication index provisioning and independent verification, real Atlas API acceptance, recorded manual-browser acceptance, and exact-record cleanup. Offline validation passed 258 tests (45 client, 213 server), with 0 failed and 0 skipped; all original 49 regression tests passed. Real API acceptance passed 73 assertions with 0 failures. These are separate evidence sets, detailed in [validation evidence](docs/evidence/README.md).
 
-Manual-browser cleanup removed 1 disposable customer, 4 owned sessions, and 2 conclusively attributable limiter records in one transaction. One unattributed limiter record was retained for automatic TTL expiration; its current status is unverified. This is not a claim that all Atlas authentication collections are currently empty. Step 5 has not started.
+Manual-browser cleanup removed 1 disposable customer, 4 owned sessions, and 2 conclusively attributable limiter records in one transaction. One unattributed limiter record was retained for automatic TTL expiration; its current status is unverified. This is not a claim that all Atlas authentication collections are currently empty.
+
+Step 5 adds 19 new and modifies 24 existing files without changing dependencies, the lockfile, schemas, collections, indexes, migrations, or JWT role claims. Its isolated suite passes 333 tests: the preserved 258-test baseline plus 75 RBAC cases across seven Step 5 test files. A separately approved real acceptance run passed 48 assertions, including anonymous 401 and customer 403 behavior, then stopped before the first role transition completed. Real Atlas role-transition acceptance remains pending.
+
+One sanitized Step 5 disposable customer and two conclusively attributed sessions remain for separately approved cleanup. The user was last verified as a customer with unchanged `authVersion`; no promotion or demotion was verified. Later diagnostics passed module, configuration, and target validation but failed during Atlas server selection before exact target lookup. This establishes no deterministic Step 5 source defect and does not prove database authentication or authorization failure.
 
 ## Architecture
 
@@ -81,7 +85,7 @@ npm audit --omit=dev
 
 Follow AGENTS.md: read-only planning, explicit approval, one step at a time. No commits or deployments are performed automatically.
 
-Step 4 implementation and the separately approved local acceptance operations are complete. Further private configuration, Atlas operations, service startup, and Git checkpoint actions require separate approval. Step 5 RBAC has not started.
+Step 4 and its Git checkpoint are complete. Step 5 implementation and offline validation are complete; real Atlas role-transition acceptance, retained-record cleanup, and the Step 5 Git checkpoint remain pending and require separate approval.
 
 ## Liveness and readiness
 
@@ -94,3 +98,9 @@ Database and lifecycle tests use isolated fakes, never a real database or a down
 Secure authentication is implemented with isolated tests. See [authentication architecture](docs/architecture/authentication.md) for endpoints, private configuration names, session rotation, CSRF controls, limits, and release gates. Minimal pages are /register, /login, and /account. Registration does not automatically sign in.
 
 Startup requires authentication secrets and explicitly provisioned authentication indexes. Private setup and provisioning succeeded under later approvals; missing or invalid configuration and indexes still fail safely. Existing health contracts remain unchanged once startup succeeds. Do not start services or provision indexes as part of automated validation. Production cookie/CORS/CSP, runtime capacity, and deployment acceptance remain pending.
+
+## Step 5 role-based access control
+
+The server now authorizes the current database-backed `customer` or `admin` role after authentication. `GET /api/v1/admin/access` is the durable, read-only admin boundary; it returns only an authorization confirmation. The React `/admin` route first applies a role-aware UX guard and then verifies access with that endpoint before rendering.
+
+The offline `auth:role` command supports check, promotion, and demotion for exactly one process-local `AUTH_ROLE_TARGET_USER_ID` or `AUTH_ROLE_TARGET_EMAIL`. Target values do not belong in tracked configuration. Atlas role-transition acceptance remains pending because later connectivity attempts failed during server selection before target lookup.

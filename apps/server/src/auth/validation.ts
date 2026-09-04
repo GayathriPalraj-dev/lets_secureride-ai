@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { AppError } from '../utils/app-error.js';
-const email = z
+export const canonicalEmailSchema = z
   .string()
   .max(320)
   .transform((value) => value.trim().toLowerCase())
@@ -20,14 +20,14 @@ const common = new Set([
   'letmeinletmeinletmein',
 ]);
 export const registerSchema = z.strictObject({
-  email,
+  email: canonicalEmailSchema,
   password: passwordInput.refine(
     (value) => [...value].length >= 15 && !common.has(value.toLowerCase()),
     'Choose a stronger password',
   ),
 });
 export const loginSchema = z.strictObject({
-  email,
+  email: canonicalEmailSchema,
   password: passwordInput.min(1),
 });
 export const emptySchema = z.strictObject({});

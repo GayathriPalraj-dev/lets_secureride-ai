@@ -1,4 +1,5 @@
 import type { AuthConfig } from '../config/auth.js';
+import type { Role } from '@lets-secureride-ai/contracts';
 import type {
   AuthRepository,
   SessionRecord,
@@ -14,7 +15,7 @@ import { AppError } from '../utils/app-error.js';
 export interface AuthIdentity {
   userId: string;
   sessionId: string;
-  role: 'customer' | 'admin';
+  role: Role;
 }
 export function createAuthService(
   repo: AuthRepository,

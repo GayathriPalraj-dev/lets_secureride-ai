@@ -9,7 +9,8 @@ import {
   type AuthRequests,
 } from '../services/auth';
 export function createAuthSession(
-  requests: AuthRequests = createAuthRequests(),
+  requests: Omit<AuthRequests, 'adminAccess'> &
+    Partial<Pick<AuthRequests, 'adminAccess'>> = createAuthRequests(),
 ) {
   let access: string | undefined;
   let expires = 0;
@@ -63,6 +64,24 @@ export function createAuthSession(
       return user;
     }
   }
+  async function withAccess(operation: (token: string) => Promise<void>) {
+    const expected = generation;
+    if (!access || Date.now() >= expires) await refresh();
+    try {
+      await operation(access!);
+    } catch (error) {
+      if (expected !== generation) throw new AuthError(401, 'SESSION_CHANGED');
+      if (!(error instanceof AuthError) || error.status !== 401) throw error;
+      try {
+        await refresh();
+        await operation(access!);
+      } catch (retryError) {
+        if (retryError instanceof AuthError && retryError.status === 401)
+          clear();
+        throw retryError;
+      }
+    }
+  }
   return {
     register: (credentials: AuthCredentials) => requests.register(credentials),
     async login(credentials: AuthCredentials) {
@@ -91,6 +110,11 @@ export function createAuthSession(
       return restorePending;
     },
     me,
+    verifyAdminAccess: () => {
+      if (!requests.adminAccess)
+        return Promise.reject(new AuthError(503, 'ADMIN_ACCESS_UNAVAILABLE'));
+      return withAccess(requests.adminAccess);
+    },
     async logout(all = false) {
       let token: string | undefined;
       try {

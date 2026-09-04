@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "auth:indexes": "node dist/scripts/auth-indexes.js"
+    "auth:indexes": "node dist/scripts/auth-indexes.js",
+    "auth:role": "node --env-file-if-exists=.env dist/scripts/manage-role.js"
   },
   "dependencies": {
     "argon2": "0.45.1",

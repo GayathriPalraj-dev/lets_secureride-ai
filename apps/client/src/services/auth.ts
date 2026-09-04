@@ -49,7 +49,7 @@ export function createAuthRequests() {
   ) {
     let response: Response;
     try {
-      response = await fetch(base + '/auth/' + path, {
+      response = await fetch(base + '/' + path, {
         method,
         credentials: 'include',
         cache: 'no-store',
@@ -91,7 +91,7 @@ export function createAuthRequests() {
     path: string,
     body?: AuthCredentials,
   ): Promise<AuthTokenData> {
-    const data = await request(path, 'POST', body);
+    const data = await request('auth/' + path, 'POST', body);
     if (
       typeof data.accessToken !== 'string' ||
       data.accessToken.length > 4096 ||
@@ -113,23 +113,28 @@ export function createAuthRequests() {
   }
   return {
     async register(body: AuthCredentials) {
-      const data = await request('register', 'POST', body);
+      const data = await request('auth/register', 'POST', body);
       return user(data.user);
     },
     login: (body: AuthCredentials) => tokenResponse('login', body),
     refresh: () => tokenResponse('refresh'),
     async me(token: string) {
-      const data = await request('me', 'GET', undefined, token);
+      const data = await request('auth/me', 'GET', undefined, token);
       return user(data.user);
     },
     async logout(token?: string, all = false) {
       const data = await request(
-        all ? 'logout-all' : 'logout',
+        all ? 'auth/logout-all' : 'auth/logout',
         'POST',
         {},
         token,
       );
       if (data.loggedOut !== true) throw new AuthError(503, 'INVALID_RESPONSE');
+    },
+    async adminAccess(token: string) {
+      const data = await request('admin/access', 'GET', undefined, token);
+      if (data.authorized !== true || Object.keys(data).length !== 1)
+        throw new AuthError(503, 'INVALID_RESPONSE');
     },
   };
 }
