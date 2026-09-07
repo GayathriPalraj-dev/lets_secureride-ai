@@ -4,6 +4,15 @@ import type {
   AuthTokenData,
 } from '@lets-secureride-ai/contracts';
 import {
+  createBookingRequests,
+  type BookingRequests,
+} from '../services/bookings';
+import type {
+  AdminBookingListQuery,
+  BookingDatesRequest,
+  BookingListQuery,
+} from '@lets-secureride-ai/contracts';
+import {
   AuthError,
   createAuthRequests,
   type AuthRequests,
@@ -20,6 +29,7 @@ export function createAuthSession(
   requests: Omit<AuthRequests, 'adminAccess'> &
     Partial<Pick<AuthRequests, 'adminAccess'>> = createAuthRequests(),
   carRequests: CarRequests = createCarRequests(),
+  bookingRequests: BookingRequests = createBookingRequests(),
 ) {
   let access: string | undefined;
   let expires = 0;
@@ -142,6 +152,29 @@ export function createAuthSession(
       withAccess((token) => carRequests.status(token, id, revision, status)),
     deleteCar: (id: string, revision: number) =>
       withAccess((token) => carRequests.remove(token, id, revision)),
+    quoteBooking: (body: BookingDatesRequest) =>
+      withAccess((token) => bookingRequests.quote(token, body)),
+    createBooking: (body: BookingDatesRequest) =>
+      withAccess((token) => bookingRequests.create(token, body)),
+    listBookings: (q: BookingListQuery = {}) =>
+      withAccess((token) => bookingRequests.list(token, q)),
+    bookingDetail: (id: string) =>
+      withAccess((token) => bookingRequests.detail(token, id)),
+    cancelBooking: (id: string, revision: number) =>
+      withAccess((token) => bookingRequests.cancel(token, id, revision)),
+    adminBookings: (q: AdminBookingListQuery = {}) =>
+      withAccess((token) => bookingRequests.adminList(token, q)),
+    adminBooking: (id: string) =>
+      withAccess((token) => bookingRequests.adminDetail(token, id)),
+    adminBookingAction: (
+      id: string,
+      revision: number,
+      action: 'confirm' | 'reject' | 'cancel',
+      reason?: string,
+    ) =>
+      withAccess((token) =>
+        bookingRequests.adminAction(token, id, revision, action, reason),
+      ),
     async logout(all = false) {
       let token: string | undefined;
       try {

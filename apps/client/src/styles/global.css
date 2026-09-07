@@ -71,6 +71,21 @@ table {
   border-collapse: collapse;
   background: white;
 }
+.booking-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+.booking-list article {
+  background: white;
+  border: 1px solid #b7c8ce;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+.booking-status {
+  font-weight: 700;
+  text-transform: capitalize;
+}
 th,
 td {
   padding: 0.7rem;

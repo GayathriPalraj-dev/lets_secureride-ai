@@ -4,6 +4,7 @@ export type CarEventName =
   | 'CAR_ACTIVATED'
   | 'CAR_DEACTIVATED'
   | 'CAR_DELETED'
+  | 'CAR_DELETE_BLOCKED'
   | 'CAR_MUTATION_CONFLICT'
   | 'CAR_OPERATION_FAILED';
 export interface CarEvent {

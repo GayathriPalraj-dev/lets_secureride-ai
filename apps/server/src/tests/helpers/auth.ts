@@ -13,6 +13,7 @@ import type { PasswordService } from '../../auth/password-service.js';
 import { createApp } from '../../app.js';
 import { parseEnv } from '../../config/env.js';
 import type { CarService } from '../../cars/service.js';
+import type { BookingService } from '../../bookings/service.js';
 export const credentials = {
   email: 'customer@example.invalid',
   password: 'A synthetic long passphrase',
@@ -167,6 +168,8 @@ export function fixture(production = false) {
     app,
     appWithCars: (cars: CarService) =>
       createApp(httpConfig, () => true, { ...dependencies, cars }),
+    appWithBookings: (bookings: BookingService) =>
+      createApp(httpConfig, () => true, { ...dependencies, bookings }),
     now,
     account,
     origin: httpConfig.CLIENT_ORIGIN,

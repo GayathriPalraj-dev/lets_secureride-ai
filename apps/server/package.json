@@ -12,7 +12,8 @@
     "build": "tsc -p tsconfig.build.json",
     "auth:indexes": "node dist/scripts/auth-indexes.js",
     "auth:role": "node --env-file-if-exists=.env dist/scripts/manage-role.js",
-    "cars:indexes": "node --env-file-if-exists=.env dist/scripts/car-indexes.js"
+    "cars:indexes": "node --env-file-if-exists=.env dist/scripts/car-indexes.js",
+    "bookings:indexes": "node --env-file-if-exists=.env dist/scripts/booking-indexes.js"
   },
   "dependencies": {
     "argon2": "0.45.1",

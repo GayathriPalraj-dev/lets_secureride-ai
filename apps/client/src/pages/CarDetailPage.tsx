@@ -75,6 +75,7 @@ export function CarDetailPage() {
         <dd>{car!.fuelType}</dd>
       </dl>
       <h2>Features</h2>
+      <Link to={`/bookings/new/${car!.id}`}>Book this car</Link>
       {car!.features.length ? (
         <ul>
           {car!.features.map((feature) => (

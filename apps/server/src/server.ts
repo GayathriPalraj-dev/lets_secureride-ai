@@ -20,6 +20,12 @@ import { createCarRepository } from './cars/repository.js';
 import { createCarService } from './cars/service.js';
 import { createCarEvents } from './cars/events.js';
 import { verifyCarIndexes } from './cars/indexes.js';
+import { createBookingModel } from './models/booking.js';
+import { createBookingOccupancyModel } from './models/booking-occupancy.js';
+import { createBookingRepository } from './bookings/repository.js';
+import { createBookingService } from './bookings/service.js';
+import { createBookingEvents } from './bookings/events.js';
+import { verifyBookingIndexes } from './bookings/indexes.js';
 
 async function main() {
   // Configuration errors are handled at this boundary, never printed as raw exceptions.
@@ -75,6 +81,10 @@ async function main() {
   const context = createMongooseContext(databaseConfig);
   const models = createAuthModels(context.connection);
   const carModels = { cars: createCarModel(context.connection) };
+  const bookingModels = {
+    bookings: createBookingModel(context.connection),
+    occupancies: createBookingOccupancyModel(context.connection),
+  };
   const repo = createAuthRepository(models);
   const tokens = createTokenService(authConfig);
   const events = createAuthEvents((event) =>
@@ -86,7 +96,20 @@ async function main() {
   const carEvents = createCarEvents((event) =>
     logger.info(event, 'Car inventory event'),
   );
-  const cars = createCarService(createCarRepository(carModels.cars), carEvents);
+  const carRepository = createCarRepository(carModels.cars);
+  const bookingRepository = createBookingRepository(bookingModels);
+  const bookingEvents = createBookingEvents((event) =>
+    logger.info(event, 'Booking event'),
+  );
+  const cars = createCarService(carRepository, carEvents, () => new Date(), {
+    hasBlockingBooking: (carId) =>
+      bookingRepository.hasBlockingBooking(carId, new Date()),
+  });
+  const bookings = createBookingService(
+    bookingRepository,
+    carRepository,
+    bookingEvents,
+  );
   const service = createAuthService(
     repo,
     passwords,
@@ -105,6 +128,7 @@ async function main() {
         await context.adapter.open();
         await verifyAuthIndexes(models);
         await verifyCarIndexes(carModels);
+        await verifyBookingIndexes(bookingModels);
       },
     },
     log,
@@ -122,6 +146,7 @@ async function main() {
       },
       authorizationEvents,
       cars,
+      bookings,
     }),
   );
   const lifecycle: ReturnType<typeof createLifecycle> = createLifecycle({

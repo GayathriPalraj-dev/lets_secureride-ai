@@ -11,6 +11,14 @@ import type {
   UpdateCarRequest,
   AuthCredentials,
   AuthUser,
+  AdminBooking,
+  AdminBookingListData,
+  AdminBookingListQuery,
+  BookingDatesRequest,
+  BookingListData,
+  BookingListQuery,
+  BookingQuote,
+  CustomerBooking,
 } from '@lets-secureride-ai/contracts';
 export interface AuthState {
   status: 'loading' | 'authenticated' | 'unauthenticated';
@@ -36,6 +44,19 @@ export interface AuthState {
     status: CarStatus,
   ): Promise<AdminCar>;
   deleteCar?(id: string, revision: number): Promise<AdminCar>;
+  quoteBooking?(body: BookingDatesRequest): Promise<BookingQuote>;
+  createBooking?(body: BookingDatesRequest): Promise<CustomerBooking>;
+  listBookings?(query?: BookingListQuery): Promise<BookingListData>;
+  bookingDetail?(id: string): Promise<CustomerBooking>;
+  cancelBooking?(id: string, revision: number): Promise<CustomerBooking>;
+  adminBookings?(query?: AdminBookingListQuery): Promise<AdminBookingListData>;
+  adminBooking?(id: string): Promise<AdminBooking>;
+  adminBookingAction?(
+    id: string,
+    revision: number,
+    action: 'confirm' | 'reject' | 'cancel',
+    reason?: string,
+  ): Promise<AdminBooking>;
   retry(): void;
 }
 export const AuthContext = createContext<AuthState | null>(null);

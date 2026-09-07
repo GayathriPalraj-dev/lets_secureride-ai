@@ -7,10 +7,13 @@ import { adminRouter } from './admin.js';
 import type { AuthorizationEvents } from '../authorization/events.js';
 import { adminCarsRouter, carsRouter } from './cars.js';
 import type { CarService } from '../cars/service.js';
+import { adminBookingsRouter, bookingsRouter } from './bookings.js';
+import type { BookingService } from '../bookings/service.js';
 export interface ApiDependencies {
   auth: AuthDependencies;
   authorizationEvents: AuthorizationEvents;
   cars?: CarService;
+  bookings?: BookingService;
 }
 export function apiRouter(
   config: Config,
@@ -38,6 +41,16 @@ export function apiRouter(
       };
       router.use('/cars', carsRouter(carDependencies));
       router.use('/admin/cars', adminCarsRouter(carDependencies));
+    }
+    if (dependencies.bookings) {
+      const bookingDependencies = {
+        auth: dependencies.auth.service,
+        bookings: dependencies.bookings,
+        authorizationEvents: dependencies.authorizationEvents,
+        origin: dependencies.auth.origin,
+      };
+      router.use('/bookings', bookingsRouter(bookingDependencies));
+      router.use('/admin/bookings', adminBookingsRouter(bookingDependencies));
     }
   }
   return router;

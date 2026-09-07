@@ -11,6 +11,10 @@ import { ForbiddenPage } from '../pages/ForbiddenPage';
 import { CarsPage } from '../pages/CarsPage';
 import { CarDetailPage } from '../pages/CarDetailPage';
 import { AdminCarsPage } from '../pages/AdminCarsPage';
+import { CreateBookingPage } from '../pages/CreateBookingPage';
+import { BookingsPage } from '../pages/BookingsPage';
+import { BookingDetailPage } from '../pages/BookingDetailPage';
+import { AdminBookingsPage } from '../pages/AdminBookingsPage';
 
 export function AppRoutes() {
   return (
@@ -23,10 +27,14 @@ export function AppRoutes() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/cars" element={<CarsPage />} />
         <Route path="/cars/:carId" element={<CarDetailPage />} />
+        <Route path="/bookings/new/:carId" element={<CreateBookingPage />} />
+        <Route path="/bookings" element={<BookingsPage />} />
+        <Route path="/bookings/:id" element={<BookingDetailPage />} />
       </Route>
       <Route element={<RoleRoute role="admin" />}>
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/cars" element={<AdminCarsPage />} />
+        <Route path="/admin/bookings" element={<AdminBookingsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

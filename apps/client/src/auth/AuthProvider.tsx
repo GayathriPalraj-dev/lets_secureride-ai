@@ -86,6 +86,14 @@ export function AuthProvider({
     updateCar: session.updateCar,
     setCarStatus: session.setCarStatus,
     deleteCar: session.deleteCar,
+    quoteBooking: session.quoteBooking,
+    createBooking: session.createBooking,
+    listBookings: session.listBookings,
+    bookingDetail: session.bookingDetail,
+    cancelBooking: session.cancelBooking,
+    adminBookings: session.adminBookings,
+    adminBooking: session.adminBooking,
+    adminBookingAction: session.adminBookingAction,
     retry() {
       setError(null);
       setStatus('loading');

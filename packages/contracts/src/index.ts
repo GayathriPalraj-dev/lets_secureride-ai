@@ -113,6 +113,81 @@ export type CarResponse = ApiSuccess<{ car: CarDetail }>;
 export type AdminCarResponse = ApiSuccess<{ car: AdminCar }>;
 export type CarMutationResponse = AdminCarResponse;
 
+export type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
+export interface BookingMoney {
+  amountMinor: number;
+  currency: 'INR';
+}
+export interface BookingCarSnapshot {
+  id: string;
+  inventoryCode: string;
+  make: string;
+  model: string;
+}
+export interface CustomerBooking {
+  id: string;
+  car: BookingCarSnapshot;
+  startDate: string;
+  endDateExclusive: string;
+  billableDays: number;
+  dailyRate: BookingMoney;
+  total: BookingMoney;
+  status: BookingStatus;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface AdminBooking extends CustomerBooking {
+  customerReference: string;
+  statusChangedAt: string;
+  statusChangedByRole: Role;
+  statusReason: string | null;
+}
+export interface BookingDatesRequest {
+  carId: string;
+  startDate: string;
+  endDateExclusive: string;
+}
+export interface BookingQuote {
+  car: BookingCarSnapshot;
+  startDate: string;
+  endDateExclusive: string;
+  billableDays: number;
+  dailyRate: BookingMoney;
+  total: BookingMoney;
+  available: boolean;
+}
+export interface BookingListQuery {
+  status?: BookingStatus | 'all';
+  sort?: 'created_desc' | 'start_asc';
+  page?: number;
+  pageSize?: number;
+}
+export interface AdminBookingListQuery extends BookingListQuery {
+  carId?: string;
+  startFrom?: string;
+  startBefore?: string;
+}
+export interface BookingListData {
+  items: CustomerBooking[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+export interface AdminBookingListData {
+  items: AdminBooking[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+export type BookingQuoteResponse = ApiSuccess<{ quote: BookingQuote }>;
+export type BookingResponse = ApiSuccess<{ booking: CustomerBooking }>;
+export type AdminBookingResponse = ApiSuccess<{ booking: AdminBooking }>;
+export type BookingListResponse = ApiSuccess<BookingListData>;
+export type AdminBookingListResponse = ApiSuccess<AdminBookingListData>;
+
 export interface ApiSuccess<T> {
   success: true;
   data: T;

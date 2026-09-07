@@ -55,6 +55,7 @@ export function AdminPage() {
       <h1>Administration</h1>
       <p>Admin access verified.</p>
       <Link to="/admin/cars">Manage car inventory</Link>
+      <Link to="/admin/bookings">Manage bookings</Link>
     </main>
   );
 }

@@ -23,6 +23,9 @@ export function createCarService(
   repository: CarRepository,
   events: CarEvents,
   now = () => new Date(),
+  bookingGuard: { hasBlockingBooking(carId: string): Promise<boolean> } = {
+    hasBlockingBooking: async () => false,
+  },
 ) {
   async function safe<T>(
     operation: string,
@@ -153,6 +156,19 @@ export function createCarService(
     },
     remove(id: string, revision: number, requestId: string) {
       return safe('delete', requestId, async () => {
+        if (await bookingGuard.hasBlockingBooking(id)) {
+          events({
+            event: 'CAR_DELETE_BLOCKED',
+            outcome: 'failure',
+            requestId,
+            operation: 'delete',
+          });
+          throw new AppError(
+            409,
+            'CAR_HAS_BOOKINGS',
+            'Car has current or future bookings',
+          );
+        }
         const car = toAdminCar(
           changed(await repository.softDelete(id, revision, now())),
         );

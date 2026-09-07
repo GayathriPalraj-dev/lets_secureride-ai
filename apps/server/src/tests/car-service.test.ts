@@ -32,7 +32,7 @@ const record = (change: Partial<CarRecord> = {}): CarRecord => ({
   updatedAt: new Date('2026-01-01'),
   ...change,
 });
-function fixture() {
+function fixture(blocked = false) {
   const car = record();
   const repository: CarRepository = {
     create: vi.fn(async () => car),
@@ -59,7 +59,12 @@ function fixture() {
   return {
     repository,
     events,
-    service: createCarService(repository, events, () => new Date('2026-02-01')),
+    service: createCarService(
+      repository,
+      events,
+      () => new Date('2026-02-01'),
+      { hasBlockingBooking: vi.fn(async () => blocked) },
+    ),
   };
 }
 const query = { sort: 'price_asc' as const, page: 1, pageSize: 20 };
@@ -162,4 +167,22 @@ describe('car service', () => {
       operation: 'admin-detail',
     });
   });
+});
+describe('booking-aware car deletion', () => {
+  it('allows deletion without blocking bookings', async () =>
+    expect(
+      fixture(false).service.remove('a'.repeat(24), 0, 'r'),
+    ).resolves.toBeDefined());
+  it('blocks a current pending booking', async () =>
+    expect(
+      fixture(true).service.remove('a'.repeat(24), 0, 'r'),
+    ).rejects.toMatchObject({ code: 'CAR_HAS_BOOKINGS' }));
+  it('blocks a future confirmed booking', async () =>
+    expect(
+      fixture(true).service.remove('a'.repeat(24), 0, 'r'),
+    ).rejects.toMatchObject({ status: 409 }));
+  it('permits deletion when terminal and ended bookings do not block', async () =>
+    expect(
+      fixture(false).service.remove('a'.repeat(24), 0, 'r'),
+    ).resolves.toMatchObject({ revision: 1 }));
 });
