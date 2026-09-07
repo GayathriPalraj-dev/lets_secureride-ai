@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import { AppError } from '../utils/app-error.js';
 export function authCsrf(origin: string): RequestHandler {
   return (req, _res, next) => {
-    if (req.method !== 'POST') {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
       next();
       return;
     }
@@ -23,7 +23,7 @@ export function authCsrf(origin: string): RequestHandler {
       );
       return;
     }
-    if (!req.is('application/json')) {
+    if (req.method !== 'DELETE' && !req.is('application/json')) {
       next(
         new AppError(415, 'UNSUPPORTED_MEDIA_TYPE', 'JSON content is required'),
       );

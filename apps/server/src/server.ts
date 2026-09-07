@@ -15,6 +15,11 @@ import { createTokenService } from './auth/token-service.js';
 import { createAuthService } from './auth/service.js';
 import { createAuthEvents } from './auth/events.js';
 import { createAuthorizationEvents } from './authorization/events.js';
+import { createCarModel } from './models/car.js';
+import { createCarRepository } from './cars/repository.js';
+import { createCarService } from './cars/service.js';
+import { createCarEvents } from './cars/events.js';
+import { verifyCarIndexes } from './cars/indexes.js';
 
 async function main() {
   // Configuration errors are handled at this boundary, never printed as raw exceptions.
@@ -69,6 +74,7 @@ async function main() {
   const passwords = await createPasswordService();
   const context = createMongooseContext(databaseConfig);
   const models = createAuthModels(context.connection);
+  const carModels = { cars: createCarModel(context.connection) };
   const repo = createAuthRepository(models);
   const tokens = createTokenService(authConfig);
   const events = createAuthEvents((event) =>
@@ -77,6 +83,10 @@ async function main() {
   const authorizationEvents = createAuthorizationEvents((event) =>
     logger.info(event, 'Authorization event'),
   );
+  const carEvents = createCarEvents((event) =>
+    logger.info(event, 'Car inventory event'),
+  );
+  const cars = createCarService(createCarRepository(carModels.cars), carEvents);
   const service = createAuthService(
     repo,
     passwords,
@@ -94,6 +104,7 @@ async function main() {
       open: async () => {
         await context.adapter.open();
         await verifyAuthIndexes(models);
+        await verifyCarIndexes(carModels);
       },
     },
     log,
@@ -110,6 +121,7 @@ async function main() {
         origin: config.CLIENT_ORIGIN,
       },
       authorizationEvents,
+      cars,
     }),
   );
   const lifecycle: ReturnType<typeof createLifecycle> = createLifecycle({

@@ -1,4 +1,5 @@
 import { HealthStatus } from '../components/HealthStatus';
+import { Link } from 'react-router-dom';
 
 export function HomePage() {
   return (
@@ -17,6 +18,9 @@ export function HomePage() {
           features are planned for later milestones.
         </p>
         <HealthStatus />
+        <p>
+          <Link to="/cars">Browse available cars</Link>
+        </p>
       </main>
       <footer>
         Foundation only · No booking or payment services are active.

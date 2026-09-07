@@ -12,6 +12,7 @@ import {
 import type { PasswordService } from '../../auth/password-service.js';
 import { createApp } from '../../app.js';
 import { parseEnv } from '../../config/env.js';
+import type { CarService } from '../../cars/service.js';
 export const credentials = {
   email: 'customer@example.invalid',
   password: 'A synthetic long passphrase',
@@ -123,7 +124,7 @@ export function fixture(production = false) {
     NODE_ENV: production ? 'production' : 'test',
     LOG_LEVEL: 'silent',
   });
-  const app = createApp(httpConfig, () => true, {
+  const dependencies = {
     auth: {
       repo,
       service,
@@ -134,7 +135,8 @@ export function fixture(production = false) {
       origin: httpConfig.CLIENT_ORIGIN,
     },
     authorizationEvents: events,
-  });
+  };
+  const app = createApp(httpConfig, () => true, dependencies);
   async function account() {
     const registered = await service.register(
       credentials.email,
@@ -163,6 +165,8 @@ export function fixture(production = false) {
     service,
     config,
     app,
+    appWithCars: (cars: CarService) =>
+      createApp(httpConfig, () => true, { ...dependencies, cars }),
     now,
     account,
     origin: httpConfig.CLIENT_ORIGIN,

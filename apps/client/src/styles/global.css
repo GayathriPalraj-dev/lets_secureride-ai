@@ -17,6 +17,66 @@ footer {
   margin: auto;
   padding: 1.5rem;
 }
+.filters,
+.car-form {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin-block: 1.5rem;
+}
+.filters label,
+.car-form label {
+  display: grid;
+  gap: 0.3rem;
+}
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  padding: 0.55rem;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.car-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.car-card {
+  background: white;
+  border: 1px solid #b7c8ce;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-block: 1.5rem;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+th,
+td {
+  padding: 0.7rem;
+  border: 1px solid #b7c8ce;
+  text-align: left;
+}
 header {
   padding-top: 3rem;
 }

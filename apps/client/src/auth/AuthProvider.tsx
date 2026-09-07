@@ -78,6 +78,14 @@ export function AuthProvider({
         throw failure;
       }
     },
+    listCars: session.listCars,
+    carDetail: session.carDetail,
+    adminCars: session.adminCars,
+    adminCar: session.adminCar,
+    createCar: session.createCar,
+    updateCar: session.updateCar,
+    setCarStatus: session.setCarStatus,
+    deleteCar: session.deleteCar,
     retry() {
       setError(null);
       setStatus('loading');

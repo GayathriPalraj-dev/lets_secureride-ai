@@ -43,7 +43,12 @@ export function createApp(
     cors({
       origin: (origin, done) => done(null, origin === config.CLIENT_ORIGIN),
       credentials: true,
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Protection'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-CSRF-Protection',
+        'If-Match',
+      ],
       exposedHeaders: ['X-Request-ID'],
     }),
   );

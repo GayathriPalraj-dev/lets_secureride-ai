@@ -19,6 +19,7 @@ export function AccountPage() {
       <h1>Your account</h1>
       <p>{auth.user?.email}</p>
       <p>Role: {auth.user?.role}</p>
+      <Link to="/cars">Browse cars</Link>
       {auth.user?.role === 'admin' && <Link to="/admin">Administration</Link>}
       <button
         disabled={pending}

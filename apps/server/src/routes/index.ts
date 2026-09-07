@@ -5,9 +5,12 @@ import { readinessRouter } from './readiness.js';
 import { authRouter, type AuthDependencies } from './auth.js';
 import { adminRouter } from './admin.js';
 import type { AuthorizationEvents } from '../authorization/events.js';
+import { adminCarsRouter, carsRouter } from './cars.js';
+import type { CarService } from '../cars/service.js';
 export interface ApiDependencies {
   auth: AuthDependencies;
   authorizationEvents: AuthorizationEvents;
+  cars?: CarService;
 }
 export function apiRouter(
   config: Config,
@@ -26,6 +29,16 @@ export function apiRouter(
         events: dependencies.authorizationEvents,
       }),
     );
+    if (dependencies.cars) {
+      const carDependencies = {
+        auth: dependencies.auth.service,
+        cars: dependencies.cars,
+        authorizationEvents: dependencies.authorizationEvents,
+        origin: dependencies.auth.origin,
+      };
+      router.use('/cars', carsRouter(carDependencies));
+      router.use('/admin/cars', adminCarsRouter(carDependencies));
+    }
   }
   return router;
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import { AuthError } from '../services/auth';
 
@@ -54,6 +54,7 @@ export function AdminPage() {
     <main>
       <h1>Administration</h1>
       <p>Admin access verified.</p>
+      <Link to="/admin/cars">Manage car inventory</Link>
     </main>
   );
 }

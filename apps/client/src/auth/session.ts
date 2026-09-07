@@ -8,9 +8,18 @@ import {
   createAuthRequests,
   type AuthRequests,
 } from '../services/auth';
+import { createCarRequests, type CarRequests } from '../services/cars';
+import type {
+  AdminCarListQuery,
+  CarListQuery,
+  CarStatus,
+  CreateCarRequest,
+  UpdateCarRequest,
+} from '@lets-secureride-ai/contracts';
 export function createAuthSession(
   requests: Omit<AuthRequests, 'adminAccess'> &
     Partial<Pick<AuthRequests, 'adminAccess'>> = createAuthRequests(),
+  carRequests: CarRequests = createCarRequests(),
 ) {
   let access: string | undefined;
   let expires = 0;
@@ -64,17 +73,19 @@ export function createAuthSession(
       return user;
     }
   }
-  async function withAccess(operation: (token: string) => Promise<void>) {
+  async function withAccess<T>(
+    operation: (token: string) => Promise<T>,
+  ): Promise<T> {
     const expected = generation;
     if (!access || Date.now() >= expires) await refresh();
     try {
-      await operation(access!);
+      return await operation(access!);
     } catch (error) {
       if (expected !== generation) throw new AuthError(401, 'SESSION_CHANGED');
       if (!(error instanceof AuthError) || error.status !== 401) throw error;
       try {
         await refresh();
-        await operation(access!);
+        return await operation(access!);
       } catch (retryError) {
         if (retryError instanceof AuthError && retryError.status === 401)
           clear();
@@ -115,6 +126,22 @@ export function createAuthSession(
         return Promise.reject(new AuthError(503, 'ADMIN_ACCESS_UNAVAILABLE'));
       return withAccess(requests.adminAccess);
     },
+    listCars: (values: CarListQuery = {}) =>
+      withAccess((token) => carRequests.list(token, values)),
+    carDetail: (id: string) =>
+      withAccess((token) => carRequests.detail(token, id)),
+    adminCars: (values: AdminCarListQuery = {}) =>
+      withAccess((token) => carRequests.adminList(token, values)),
+    adminCar: (id: string) =>
+      withAccess((token) => carRequests.adminDetail(token, id)),
+    createCar: (body: CreateCarRequest) =>
+      withAccess((token) => carRequests.create(token, body)),
+    updateCar: (id: string, revision: number, body: UpdateCarRequest) =>
+      withAccess((token) => carRequests.replace(token, id, revision, body)),
+    setCarStatus: (id: string, revision: number, status: CarStatus) =>
+      withAccess((token) => carRequests.status(token, id, revision, status)),
+    deleteCar: (id: string, revision: number) =>
+      withAccess((token) => carRequests.remove(token, id, revision)),
     async logout(all = false) {
       let token: string | undefined;
       try {

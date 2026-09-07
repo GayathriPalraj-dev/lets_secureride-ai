@@ -8,6 +8,9 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 import { RoleRoute } from '../components/RoleRoute';
 import { AdminPage } from '../pages/AdminPage';
 import { ForbiddenPage } from '../pages/ForbiddenPage';
+import { CarsPage } from '../pages/CarsPage';
+import { CarDetailPage } from '../pages/CarDetailPage';
+import { AdminCarsPage } from '../pages/AdminCarsPage';
 
 export function AppRoutes() {
   return (
@@ -18,9 +21,12 @@ export function AppRoutes() {
       <Route path="/forbidden" element={<ForbiddenPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/account" element={<AccountPage />} />
+        <Route path="/cars" element={<CarsPage />} />
+        <Route path="/cars/:carId" element={<CarDetailPage />} />
       </Route>
       <Route element={<RoleRoute role="admin" />}>
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/cars" element={<AdminCarsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

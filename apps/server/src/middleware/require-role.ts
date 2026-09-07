@@ -34,3 +34,33 @@ export function requireRole(
     next();
   };
 }
+
+export function requireAnyRole(
+  roles: readonly Role[],
+  events?: AuthorizationEvents,
+): RequestHandler {
+  return (req, _res, next) => {
+    if (!req.auth) {
+      next(unauthorized());
+      return;
+    }
+    const actual: unknown = req.auth.role;
+    if (!isRole(actual) || !roleAllowed(actual, roles)) {
+      events?.({
+        event: 'AUTHORIZATION_DENIED',
+        outcome: 'failure',
+        requestId: req.requestId,
+        ...(isRole(actual) ? { currentRole: actual } : {}),
+      });
+      next(
+        new AppError(
+          403,
+          'FORBIDDEN',
+          'You do not have permission to perform this action',
+        ),
+      );
+      return;
+    }
+    next();
+  };
+}
