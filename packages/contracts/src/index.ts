@@ -188,6 +188,69 @@ export type AdminBookingResponse = ApiSuccess<{ booking: AdminBooking }>;
 export type BookingListResponse = ApiSuccess<BookingListData>;
 export type AdminBookingListResponse = ApiSuccess<AdminBookingListData>;
 
+export type PaymentStatus =
+  | 'initializing'
+  | 'requires_payment_method'
+  | 'requires_action'
+  | 'processing'
+  | 'succeeded'
+  | 'canceled'
+  | 'reconciliation_required';
+export type RefundStatus =
+  'none' | 'required' | 'pending' | 'succeeded' | 'failed';
+export type PaymentFailureCategory =
+  | 'provider_unavailable'
+  | 'provider_declined'
+  | 'provider_invalid_state'
+  | 'provider_timeout'
+  | 'provider_unknown_outcome';
+export interface CustomerPayment {
+  id: string;
+  bookingId: string;
+  amount: BookingMoney;
+  status: PaymentStatus;
+  refundStatus: RefundStatus;
+  failureCategory: PaymentFailureCategory | null;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface AdminPayment extends CustomerPayment {
+  customerReference: string;
+  booking: BookingCarSnapshot;
+  reconciliationState: 'none' | 'required' | 'in_progress' | 'failed';
+  retryEligible: boolean;
+}
+export interface PaymentListQuery {
+  status?: PaymentStatus | 'all';
+  page?: number;
+  pageSize?: number;
+}
+export interface AdminPaymentListQuery extends PaymentListQuery {
+  refundStatus?: RefundStatus | 'all';
+  reconciliationState?: AdminPayment['reconciliationState'] | 'all';
+}
+export interface PaymentListData {
+  items: CustomerPayment[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+export interface AdminPaymentListData extends Omit<PaymentListData, 'items'> {
+  items: AdminPayment[];
+}
+export interface PaymentConfirmation {
+  publishableKey: string;
+  clientSecret: string;
+}
+export type PaymentResponse = ApiSuccess<{ payment: CustomerPayment }>;
+export type PaymentSessionResponse = ApiSuccess<{
+  payment: CustomerPayment;
+  confirmation?: PaymentConfirmation;
+}>;
+export type AdminPaymentResponse = ApiSuccess<{ payment: AdminPayment }>;
+
 export interface ApiSuccess<T> {
   success: true;
   data: T;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import type { CustomerBooking } from '@lets-secureride-ai/contracts';
 import { useAuth } from '../auth/useAuth';
 import { BookingActions } from '../components/BookingActions';
@@ -32,6 +32,9 @@ export function BookingDetailPage() {
         {b.startDate} to {b.endDateExclusive}
       </p>
       <p>Total ₹{b.total.amountMinor / 100}</p>
+      {b.status === 'confirmed' && (
+        <Link to={`/bookings/${b.id}/payment`}>Pay securely</Link>
+      )}
       <BookingActions
         booking={b}
         pending={pending}

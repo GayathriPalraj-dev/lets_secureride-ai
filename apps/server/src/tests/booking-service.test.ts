@@ -35,3 +35,5 @@ describe('booking service policy', () => {
     'safe DTO',
   ])('%s contract', (x) => expect(x).not.toContain('mongodb'));
 });
+
+// Payment cancellation coordination is covered by the Step 8 integration suite.

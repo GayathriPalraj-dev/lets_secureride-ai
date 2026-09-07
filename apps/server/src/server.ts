@@ -26,6 +26,17 @@ import { createBookingRepository } from './bookings/repository.js';
 import { createBookingService } from './bookings/service.js';
 import { createBookingEvents } from './bookings/events.js';
 import { verifyBookingIndexes } from './bookings/indexes.js';
+import { parsePaymentEnv } from './config/payments.js';
+import { createPaymentModel } from './models/payment.js';
+import { createPaymentEventModel } from './models/payment-event.js';
+import { createPaymentRepository } from './payments/repository.js';
+import { createStripeProvider } from './payments/stripe-provider.js';
+import { createPaymentEvents } from './payments/events.js';
+import { createPaymentService } from './payments/service.js';
+import { createWebhookService } from './payments/webhook-service.js';
+import { createPaymentLimiter } from './middleware/payment-rate-limit.js';
+import { paymentWebhookRouter } from './routes/payment-webhook.js';
+import { verifyPaymentIndexes } from './payments/indexes.js';
 
 async function main() {
   // Configuration errors are handled at this boundary, never printed as raw exceptions.
@@ -50,6 +61,21 @@ async function main() {
     return;
   }
   const logger = createLogger(config);
+  let paymentConfig;
+  try {
+    paymentConfig = parsePaymentEnv({
+      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+      STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
+      STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    });
+  } catch {
+    logger.fatal(
+      { code: 'INVALID_PAYMENT_CONFIG' },
+      'Payment configuration is invalid',
+    );
+    process.exitCode = 1;
+    return;
+  }
   let authConfig;
   try {
     authConfig = parseAuthEnv(
@@ -85,6 +111,11 @@ async function main() {
     bookings: createBookingModel(context.connection),
     occupancies: createBookingOccupancyModel(context.connection),
   };
+  const paymentModels = {
+    payments: createPaymentModel(context.connection),
+    events: createPaymentEventModel(context.connection),
+  };
+  Object.assign(bookingModels, { payments: paymentModels.payments });
   const repo = createAuthRepository(models);
   const tokens = createTokenService(authConfig);
   const events = createAuthEvents((event) =>
@@ -98,6 +129,23 @@ async function main() {
   );
   const carRepository = createCarRepository(carModels.cars);
   const bookingRepository = createBookingRepository(bookingModels);
+  const paymentRepository = createPaymentRepository(paymentModels);
+  const paymentEvents = createPaymentEvents((event) =>
+    logger.info(event, 'Payment event'),
+  );
+  const paymentProvider = createStripeProvider(paymentConfig.STRIPE_SECRET_KEY);
+  const payments = createPaymentService(
+    paymentRepository,
+    bookingRepository,
+    paymentProvider,
+    paymentEvents,
+    paymentConfig.STRIPE_PUBLISHABLE_KEY,
+  );
+  const webhook = createWebhookService(paymentRepository, paymentEvents);
+  const paymentLimiter = createPaymentLimiter(
+    repo,
+    authConfig.AUTH_RATE_LIMIT_SECRET,
+  );
   const bookingEvents = createBookingEvents((event) =>
     logger.info(event, 'Booking event'),
   );
@@ -109,6 +157,13 @@ async function main() {
     bookingRepository,
     carRepository,
     bookingEvents,
+    () => new Date(),
+    (bookingId) =>
+      (
+        payments as typeof payments & {
+          refundForBooking(id: string): Promise<void>;
+        }
+      ).refundForBooking(bookingId),
   );
   const service = createAuthService(
     repo,
@@ -129,6 +184,7 @@ async function main() {
         await verifyAuthIndexes(models);
         await verifyCarIndexes(carModels);
         await verifyBookingIndexes(bookingModels);
+        await verifyPaymentIndexes(paymentModels);
       },
     },
     log,
@@ -147,6 +203,16 @@ async function main() {
       authorizationEvents,
       cars,
       bookings,
+      payments,
+      paymentLimiter,
+      paymentWebhook: paymentWebhookRouter({
+        provider: paymentProvider,
+        service: webhook,
+        signingSecret: paymentConfig.STRIPE_WEBHOOK_SECRET,
+        coarseLimiter: paymentLimiter('webhook', 'ip'),
+        invalidLimiter: paymentLimiter('webhookInvalid', 'ip'),
+        events: paymentEvents,
+      }),
     }),
   );
   const lifecycle: ReturnType<typeof createLifecycle> = createLifecycle({

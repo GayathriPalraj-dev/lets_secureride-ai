@@ -9,11 +9,21 @@ import { adminCarsRouter, carsRouter } from './cars.js';
 import type { CarService } from '../cars/service.js';
 import { adminBookingsRouter, bookingsRouter } from './bookings.js';
 import type { BookingService } from '../bookings/service.js';
+import type { RequestHandler } from 'express';
+import type { PaymentService } from '../payments/service.js';
+import {
+  adminPaymentsRouter,
+  bookingPaymentsRouter,
+  paymentsRouter,
+} from './payments.js';
 export interface ApiDependencies {
   auth: AuthDependencies;
   authorizationEvents: AuthorizationEvents;
   cars?: CarService;
   bookings?: BookingService;
+  payments?: PaymentService;
+  paymentLimiter?: Parameters<typeof paymentsRouter>[0]['limiter'];
+  paymentWebhook?: RequestHandler;
 }
 export function apiRouter(
   config: Config,
@@ -51,6 +61,18 @@ export function apiRouter(
       };
       router.use('/bookings', bookingsRouter(bookingDependencies));
       router.use('/admin/bookings', adminBookingsRouter(bookingDependencies));
+    }
+    if (dependencies.payments && dependencies.paymentLimiter) {
+      const paymentDependencies = {
+        auth: dependencies.auth.service,
+        payments: dependencies.payments,
+        authorizationEvents: dependencies.authorizationEvents,
+        origin: dependencies.auth.origin,
+        limiter: dependencies.paymentLimiter,
+      };
+      router.use('/bookings', bookingPaymentsRouter(paymentDependencies));
+      router.use('/payments', paymentsRouter(paymentDependencies));
+      router.use('/admin/payments', adminPaymentsRouter(paymentDependencies));
     }
   }
   return router;

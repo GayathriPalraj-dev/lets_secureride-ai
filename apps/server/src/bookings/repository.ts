@@ -7,6 +7,7 @@ import type {
 import type { createBookingModel } from '../models/booking.js';
 import type { createBookingOccupancyModel } from '../models/booking-occupancy.js';
 import { occupancyDates, type AvailabilityRepository } from './availability.js';
+import type { Model } from 'mongoose';
 export interface BookingRecord {
   id: string;
   userId: string;
@@ -88,6 +89,7 @@ export interface BookingRepository extends AvailabilityRepository {
 type Models = {
   bookings: ReturnType<typeof createBookingModel>;
   occupancies: ReturnType<typeof createBookingOccupancyModel>;
+  payments?: Model<unknown>;
 };
 type Row = Record<string, unknown> & { _id: { toString(): string } };
 const oid = (v: unknown) => String(v);
@@ -257,6 +259,12 @@ export function createBookingRepository(models: Models): BookingRepository {
         if (!r) return classify(id, userId, revision);
         if (release)
           await models.occupancies.deleteMany({ bookingId: id }, { session });
+        if (to === 'cancelled' && models.payments)
+          await models.payments.updateOne(
+            { bookingId: id, status: 'succeeded', 'refund.status': 'none' },
+            { $set: { 'refund.status': 'required', 'refund.updatedAt': at } },
+            { session },
+          );
         return { result: 'updated', booking: map(r) };
       });
     },

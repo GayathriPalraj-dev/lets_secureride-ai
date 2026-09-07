@@ -94,6 +94,13 @@ export function AuthProvider({
     adminBookings: session.adminBookings,
     adminBooking: session.adminBooking,
     adminBookingAction: session.adminBookingAction,
+    startPayment: session.startPayment,
+    paymentByBooking: session.paymentByBooking,
+    paymentDetail: session.paymentDetail,
+    listPayments: session.listPayments,
+    adminPayments: session.adminPayments,
+    adminPayment: session.adminPayment,
+    adminPaymentAction: session.adminPaymentAction,
     retry() {
       setError(null);
       setStatus('loading');

@@ -4,6 +4,22 @@
   background: #f4f7f8;
   line-height: 1.6;
 }
+
+.payment-status {
+  font-weight: 600;
+}
+.payment-succeeded {
+  color: #176b35;
+}
+.payment-canceled,
+.payment-reconciliation_required {
+  color: #8a3b12;
+}
+@media (max-width: 640px) {
+  .payment-status + button {
+    width: 100%;
+  }
+}
 * {
   box-sizing: border-box;
 }

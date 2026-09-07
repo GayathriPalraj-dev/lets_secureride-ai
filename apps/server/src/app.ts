@@ -39,6 +39,9 @@ export function createApp(
     }),
   );
   app.use(helmet());
+  if (dependencies?.paymentWebhook) {
+    app.use('/api/v1/payments/webhook', dependencies.paymentWebhook);
+  }
   app.use(
     cors({
       origin: (origin, done) => done(null, origin === config.CLIENT_ORIGIN),

@@ -3,6 +3,14 @@ import type {
   AuthUser,
   AuthTokenData,
 } from '@lets-secureride-ai/contracts';
+import type {
+  AdminPaymentListQuery,
+  PaymentListQuery,
+} from '@lets-secureride-ai/contracts';
+import {
+  createPaymentRequests,
+  type PaymentRequests,
+} from '../services/payments';
 import {
   createBookingRequests,
   type BookingRequests,
@@ -30,6 +38,7 @@ export function createAuthSession(
     Partial<Pick<AuthRequests, 'adminAccess'>> = createAuthRequests(),
   carRequests: CarRequests = createCarRequests(),
   bookingRequests: BookingRequests = createBookingRequests(),
+  paymentRequests: PaymentRequests = createPaymentRequests(),
 ) {
   let access: string | undefined;
   let expires = 0;
@@ -174,6 +183,27 @@ export function createAuthSession(
     ) =>
       withAccess((token) =>
         bookingRequests.adminAction(token, id, revision, action, reason),
+      ),
+    startPayment: (bookingId: string, revision: number) =>
+      withAccess((token) => paymentRequests.start(token, bookingId, revision)),
+    paymentByBooking: (bookingId: string) =>
+      withAccess((token) => paymentRequests.byBooking(token, bookingId)),
+    paymentDetail: (id: string) =>
+      withAccess((token) => paymentRequests.detail(token, id)),
+    listPayments: (query: PaymentListQuery = {}) =>
+      withAccess((token) => paymentRequests.list(token, query)),
+    adminPayments: (query: AdminPaymentListQuery = {}) =>
+      withAccess((token) => paymentRequests.adminList(token, query)),
+    adminPayment: (id: string) =>
+      withAccess((token) => paymentRequests.adminDetail(token, id)),
+    adminPaymentAction: (
+      id: string,
+      revision: number,
+      action: 'reconcile' | 'refund',
+      reason?: string,
+    ) =>
+      withAccess((token) =>
+        paymentRequests.adminAction(token, id, revision, action, reason),
       ),
     async logout(all = false) {
       let token: string | undefined;

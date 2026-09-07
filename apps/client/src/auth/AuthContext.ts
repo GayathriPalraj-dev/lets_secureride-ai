@@ -19,6 +19,13 @@ import type {
   BookingListQuery,
   BookingQuote,
   CustomerBooking,
+  CustomerPayment,
+  AdminPayment,
+  PaymentConfirmation,
+  PaymentListData,
+  PaymentListQuery,
+  AdminPaymentListData,
+  AdminPaymentListQuery,
 } from '@lets-secureride-ai/contracts';
 export interface AuthState {
   status: 'loading' | 'authenticated' | 'unauthenticated';
@@ -57,6 +64,21 @@ export interface AuthState {
     action: 'confirm' | 'reject' | 'cancel',
     reason?: string,
   ): Promise<AdminBooking>;
+  startPayment?(
+    bookingId: string,
+    revision: number,
+  ): Promise<{ payment: CustomerPayment; confirmation?: PaymentConfirmation }>;
+  paymentByBooking?(bookingId: string): Promise<CustomerPayment>;
+  paymentDetail?(id: string): Promise<CustomerPayment>;
+  listPayments?(query?: PaymentListQuery): Promise<PaymentListData>;
+  adminPayments?(query?: AdminPaymentListQuery): Promise<AdminPaymentListData>;
+  adminPayment?(id: string): Promise<AdminPayment>;
+  adminPaymentAction?(
+    id: string,
+    revision: number,
+    action: 'reconcile' | 'refund',
+    reason?: string,
+  ): Promise<AdminPayment>;
   retry(): void;
 }
 export const AuthContext = createContext<AuthState | null>(null);

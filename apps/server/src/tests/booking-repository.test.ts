@@ -32,3 +32,5 @@ describe('booking repository contract', () => {
   );
   expect(new OccupancyConflict()).toBeInstanceOf(Error);
 });
+
+// Atomic refund-required coordination is covered by the Step 8 integration suite.

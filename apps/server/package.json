@@ -13,7 +13,8 @@
     "auth:indexes": "node dist/scripts/auth-indexes.js",
     "auth:role": "node --env-file-if-exists=.env dist/scripts/manage-role.js",
     "cars:indexes": "node --env-file-if-exists=.env dist/scripts/car-indexes.js",
-    "bookings:indexes": "node --env-file-if-exists=.env dist/scripts/booking-indexes.js"
+    "bookings:indexes": "node --env-file-if-exists=.env dist/scripts/booking-indexes.js",
+    "payments:indexes": "node --env-file-if-exists=.env dist/scripts/payment-indexes.js"
   },
   "dependencies": {
     "argon2": "0.45.1",
@@ -27,6 +28,7 @@
     "mongoose": "9.9.4",
     "pino": "10.3.1",
     "pino-http": "11.0.0",
+    "stripe": "22.6.1",
     "zod": "4.5.4"
   },
   "devDependencies": {

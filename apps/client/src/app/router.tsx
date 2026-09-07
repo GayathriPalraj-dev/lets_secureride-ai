@@ -15,6 +15,9 @@ import { CreateBookingPage } from '../pages/CreateBookingPage';
 import { BookingsPage } from '../pages/BookingsPage';
 import { BookingDetailPage } from '../pages/BookingDetailPage';
 import { AdminBookingsPage } from '../pages/AdminBookingsPage';
+import { PaymentPage } from '../pages/PaymentPage';
+import { PaymentReturnPage } from '../pages/PaymentReturnPage';
+import { AdminPaymentsPage } from '../pages/AdminPaymentsPage';
 
 export function AppRoutes() {
   return (
@@ -30,11 +33,14 @@ export function AppRoutes() {
         <Route path="/bookings/new/:carId" element={<CreateBookingPage />} />
         <Route path="/bookings" element={<BookingsPage />} />
         <Route path="/bookings/:id" element={<BookingDetailPage />} />
+        <Route path="/bookings/:bookingId/payment" element={<PaymentPage />} />
+        <Route path="/payments/return" element={<PaymentReturnPage />} />
       </Route>
       <Route element={<RoleRoute role="admin" />}>
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/cars" element={<AdminCarsPage />} />
         <Route path="/admin/bookings" element={<AdminBookingsPage />} />
+        <Route path="/admin/payments" element={<AdminPaymentsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

@@ -25,6 +25,7 @@ export function createBookingService(
   cars: CarRepository,
   events: BookingEvents,
   now = () => new Date(),
+  afterCancellation: (bookingId: string) => Promise<void> = async () => {},
 ) {
   async function safe<T>(
     op: string,
@@ -244,6 +245,7 @@ export function createBookingService(
             next === 'cancelled' || next === 'rejected',
           ),
         );
+        if (next === 'cancelled') await afterCancellation(b.id);
         events({
           event:
             next === 'confirmed'
