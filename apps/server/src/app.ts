@@ -39,6 +39,7 @@ export function createApp(
     }),
   );
   app.use(helmet());
+  if (dependencies?.imageScanEvents) app.use(dependencies.imageScanEvents);
   if (dependencies?.paymentWebhook) {
     app.use('/api/v1/payments/webhook', dependencies.paymentWebhook);
   }

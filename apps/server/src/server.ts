@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { createApp } from './app.js';
-import { parseEnv, parseDatabaseEnv } from './config/env.js';
+import { imageEnvironment, parseEnv, parseDatabaseEnv } from './config/env.js';
 import { createLogger } from './config/logger.js';
 import {
   createDatabaseManager,
@@ -37,6 +37,20 @@ import { createWebhookService } from './payments/webhook-service.js';
 import { createPaymentLimiter } from './middleware/payment-rate-limit.js';
 import { paymentWebhookRouter } from './routes/payment-webhook.js';
 import { verifyPaymentIndexes } from './payments/indexes.js';
+import { S3Client } from '@aws-sdk/client-s3';
+import { parseImageConfig } from './config/images.js';
+import { createCarImageModel } from './models/car-image.js';
+import { createCarImageSetModel } from './models/car-image-set.js';
+import { createCarImageScanEventModel } from './models/car-image-scan-event.js';
+import { createImageRepository } from './car-images/repository.js';
+import { createS3ImageStorage } from './car-images/s3-storage.js';
+import { createSharpProcessor } from './car-images/sharp-processor.js';
+import { createCarImageEvents } from './car-images/events.js';
+import { createCarImageService } from './car-images/service.js';
+import { createScanService } from './car-images/scan-service.js';
+import { createImageLimiter } from './middleware/image-rate-limit.js';
+import { imageScanEventsRouter } from './routes/image-scan-events.js';
+import { verifyCarImageIndexes } from './car-images/indexes.js';
 
 async function main() {
   // Configuration errors are handled at this boundary, never printed as raw exceptions.
@@ -61,6 +75,17 @@ async function main() {
     return;
   }
   const logger = createLogger(config);
+  let imageConfig;
+  try {
+    imageConfig = parseImageConfig(imageEnvironment(process.env));
+  } catch {
+    logger.fatal(
+      { code: 'INVALID_IMAGE_CONFIG' },
+      'Image configuration is invalid',
+    );
+    process.exitCode = 1;
+    return;
+  }
   let paymentConfig;
   try {
     paymentConfig = parsePaymentEnv({
@@ -115,6 +140,11 @@ async function main() {
     payments: createPaymentModel(context.connection),
     events: createPaymentEventModel(context.connection),
   };
+  const imageModels = {
+    images: createCarImageModel(context.connection),
+    sets: createCarImageSetModel(context.connection),
+    events: createCarImageScanEventModel(context.connection),
+  };
   Object.assign(bookingModels, { payments: paymentModels.payments });
   const repo = createAuthRepository(models);
   const tokens = createTokenService(authConfig);
@@ -146,13 +176,51 @@ async function main() {
     repo,
     authConfig.AUTH_RATE_LIMIT_SECRET,
   );
+  const imageRepository = createImageRepository(imageModels);
+  const imageEvents = createCarImageEvents((event) =>
+    logger.info(event, 'Car image event'),
+  );
+  const imageStorage = createS3ImageStorage(
+    new S3Client({ region: imageConfig.AWS_REGION }),
+    imageConfig.CAR_IMAGE_BUCKET,
+  );
+  const carImages = createCarImageService(
+    imageRepository,
+    imageStorage,
+    createSharpProcessor(),
+    imageEvents,
+    {
+      exists: async (id, active = false) =>
+        Boolean(
+          active
+            ? await carRepository.findPublic(id)
+            : await carRepository.findAdmin(id),
+        ),
+    },
+  );
+  const scanImages = createScanService(
+    imageRepository,
+    imageStorage,
+    createSharpProcessor(),
+    imageEvents,
+  );
+  const imageLimiter = createImageLimiter(
+    repo,
+    authConfig.AUTH_RATE_LIMIT_SECRET,
+  );
   const bookingEvents = createBookingEvents((event) =>
     logger.info(event, 'Booking event'),
   );
-  const cars = createCarService(carRepository, carEvents, () => new Date(), {
-    hasBlockingBooking: (carId) =>
-      bookingRepository.hasBlockingBooking(carId, new Date()),
-  });
+  const cars = createCarService(
+    carRepository,
+    carEvents,
+    () => new Date(),
+    {
+      hasBlockingBooking: (carId) =>
+        bookingRepository.hasBlockingBooking(carId, new Date()),
+    },
+    { hasLive: (carId) => imageRepository.hasLive(carId) },
+  );
   const bookings = createBookingService(
     bookingRepository,
     carRepository,
@@ -185,6 +253,7 @@ async function main() {
         await verifyCarIndexes(carModels);
         await verifyBookingIndexes(bookingModels);
         await verifyPaymentIndexes(paymentModels);
+        await verifyCarImageIndexes(imageModels);
       },
     },
     log,
@@ -212,6 +281,13 @@ async function main() {
         coarseLimiter: paymentLimiter('webhook', 'ip'),
         invalidLimiter: paymentLimiter('webhookInvalid', 'ip'),
         events: paymentEvents,
+      }),
+      carImages,
+      imageLimiter,
+      imageScanEvents: imageScanEventsRouter({
+        service: scanImages,
+        secret: imageConfig.CAR_IMAGE_EVENT_SECRET,
+        limiter: imageLimiter('event'),
       }),
     }),
   );

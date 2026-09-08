@@ -101,6 +101,13 @@ export function AuthProvider({
     adminPayments: session.adminPayments,
     adminPayment: session.adminPayment,
     adminPaymentAction: session.adminPaymentAction,
+    adminCarImages: session.adminCarImages,
+    authorizeCarImage: session.authorizeCarImage,
+    completeCarImage: session.completeCarImage,
+    updateCarImage: session.updateCarImage,
+    primaryCarImage: session.primaryCarImage,
+    removeCarImage: session.removeCarImage,
+    carImageContent: session.carImageContent,
     retry() {
       setError(null);
       setStatus('loading');

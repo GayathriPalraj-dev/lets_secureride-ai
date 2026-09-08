@@ -76,3 +76,18 @@ export function parseDatabaseEnv(
   }
   return { MONGODB_URI: value };
 }
+
+export type ImageEnvironmentInput = Record<string, unknown>;
+export function imageEnvironment(
+  input: NodeJS.ProcessEnv,
+): ImageEnvironmentInput {
+  return {
+    ...(input.AWS_REGION ? { AWS_REGION: input.AWS_REGION } : {}),
+    ...(input.CAR_IMAGE_BUCKET
+      ? { CAR_IMAGE_BUCKET: input.CAR_IMAGE_BUCKET }
+      : {}),
+    ...(input.CAR_IMAGE_EVENT_SECRET
+      ? { CAR_IMAGE_EVENT_SECRET: input.CAR_IMAGE_EVENT_SECRET }
+      : {}),
+  };
+}

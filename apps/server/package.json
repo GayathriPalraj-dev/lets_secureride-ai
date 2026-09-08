@@ -14,9 +14,12 @@
     "auth:role": "node --env-file-if-exists=.env dist/scripts/manage-role.js",
     "cars:indexes": "node --env-file-if-exists=.env dist/scripts/car-indexes.js",
     "bookings:indexes": "node --env-file-if-exists=.env dist/scripts/booking-indexes.js",
-    "payments:indexes": "node --env-file-if-exists=.env dist/scripts/payment-indexes.js"
+    "payments:indexes": "node --env-file-if-exists=.env dist/scripts/payment-indexes.js",
+    "car-images:indexes": "node --env-file-if-exists=.env dist/scripts/car-image-indexes.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1094.0",
+    "@aws-sdk/s3-presigned-post": "3.1094.0",
     "argon2": "0.45.1",
     "compression": "1.8.1",
     "cookie": "2.0.1",
@@ -28,6 +31,7 @@
     "mongoose": "9.9.4",
     "pino": "10.3.1",
     "pino-http": "11.0.0",
+    "sharp": "0.35.4",
     "stripe": "22.6.1",
     "zod": "4.5.4"
   },

@@ -1,8 +1,18 @@
 import type { CarSummary } from '@lets-secureride-ai/contracts';
 import { Link } from 'react-router-dom';
+import { CarPrimaryImage } from './CarPrimaryImage';
 export function CarCard({ car }: { car: CarSummary }) {
+  const image = car.images?.find((value) => value.isPrimary) ?? car.images?.[0];
   return (
     <article className="car-card">
+      {image ? (
+        <CarPrimaryImage image={image} />
+      ) : (
+        <div
+          className="car-image-fallback"
+          aria-label="No car image available"
+        />
+      )}
       <h2>
         {car.make} {car.model}
       </h2>

@@ -26,6 +26,9 @@ export function createCarService(
   bookingGuard: { hasBlockingBooking(carId: string): Promise<boolean> } = {
     hasBlockingBooking: async () => false,
   },
+  imageGuard: { hasLive(carId: string): Promise<boolean> } = {
+    hasLive: async () => false,
+  },
 ) {
   async function safe<T>(
     operation: string,
@@ -167,6 +170,13 @@ export function createCarService(
             409,
             'CAR_HAS_BOOKINGS',
             'Car has current or future bookings',
+          );
+        }
+        if (await imageGuard.hasLive(id)) {
+          throw new AppError(
+            409,
+            'CAR_HAS_IMAGES',
+            'Remove car images before deletion',
           );
         }
         const car = toAdminCar(

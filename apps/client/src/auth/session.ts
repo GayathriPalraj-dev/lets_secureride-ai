@@ -26,6 +26,10 @@ import {
   type AuthRequests,
 } from '../services/auth';
 import { createCarRequests, type CarRequests } from '../services/cars';
+import {
+  createCarImageRequests,
+  type CarImageRequests,
+} from '../services/car-images';
 import type {
   AdminCarListQuery,
   CarListQuery,
@@ -39,6 +43,7 @@ export function createAuthSession(
   carRequests: CarRequests = createCarRequests(),
   bookingRequests: BookingRequests = createBookingRequests(),
   paymentRequests: PaymentRequests = createPaymentRequests(),
+  imageRequests: CarImageRequests = createCarImageRequests(),
 ) {
   let access: string | undefined;
   let expires = 0;
@@ -146,9 +151,23 @@ export function createAuthSession(
       return withAccess(requests.adminAccess);
     },
     listCars: (values: CarListQuery = {}) =>
-      withAccess((token) => carRequests.list(token, values)),
+      withAccess(async (token) => {
+        const page = await carRequests.list(token, values);
+        return {
+          ...page,
+          items: await Promise.all(
+            page.items.map(async (car) => ({
+              ...car,
+              images: await imageRequests.customerList(token, car.id),
+            })),
+          ),
+        };
+      }),
     carDetail: (id: string) =>
-      withAccess((token) => carRequests.detail(token, id)),
+      withAccess(async (token) => ({
+        ...(await carRequests.detail(token, id)),
+        images: await imageRequests.customerList(token, id),
+      })),
     adminCars: (values: AdminCarListQuery = {}) =>
       withAccess((token) => carRequests.adminList(token, values)),
     adminCar: (id: string) =>
@@ -205,6 +224,59 @@ export function createAuthSession(
       withAccess((token) =>
         paymentRequests.adminAction(token, id, revision, action, reason),
       ),
+    adminCarImages: (carId: string) =>
+      withAccess((token) => imageRequests.adminList(token, carId)),
+    authorizeCarImage: (
+      carId: string,
+      body: import('@lets-secureride-ai/contracts').CreateCarImageUploadRequest,
+      revision: number,
+    ) =>
+      withAccess((token) =>
+        imageRequests.authorize(token, carId, body, revision),
+      ),
+    completeCarImage: (carId: string, imageId: string, revision: number) =>
+      withAccess((token) =>
+        imageRequests
+          .complete(token, carId, imageId, revision)
+          .then((x) => x.image),
+      ),
+    updateCarImage: (
+      carId: string,
+      imageId: string,
+      revision: number,
+      body: import('@lets-secureride-ai/contracts').UpdateCarImageRequest,
+    ) =>
+      withAccess((token) =>
+        imageRequests
+          .update(token, carId, imageId, revision, body)
+          .then(
+            (x: {
+              image: import('@lets-secureride-ai/contracts').AdminCarImage;
+            }) => x.image,
+          ),
+      ),
+    primaryCarImage: (carId: string, imageId: string, revision: number) =>
+      withAccess((token) =>
+        imageRequests
+          .primary(token, carId, imageId, revision)
+          .then(
+            (x: {
+              image: import('@lets-secureride-ai/contracts').AdminCarImage;
+            }) => x.image,
+          ),
+      ),
+    removeCarImage: (carId: string, imageId: string, revision: number) =>
+      withAccess((token) =>
+        imageRequests
+          .remove(token, carId, imageId, revision)
+          .then(
+            (x: {
+              image: import('@lets-secureride-ai/contracts').AdminCarImage;
+            }) => x.image,
+          ),
+      ),
+    carImageContent: (url: string, signal?: AbortSignal) =>
+      withAccess((token) => imageRequests.content(token, url, signal)),
     async logout(all = false) {
       let token: string | undefined;
       try {

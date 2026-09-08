@@ -1,4 +1,65 @@
 export type Environment = 'development' | 'test' | 'production';
+export type CarImageStatus =
+  | 'pending_upload'
+  | 'uploaded'
+  | 'verification_pending'
+  | 'ready'
+  | 'rejected'
+  | 'expired'
+  | 'deleted';
+export type CarImageScanState =
+  'pending' | 'clean' | 'threat' | 'unsupported' | 'failed';
+export type CarImageFailure =
+  | 'upload_missing'
+  | 'upload_mismatch'
+  | 'scan_threat'
+  | 'scan_unsupported'
+  | 'scan_failed'
+  | 'invalid_media'
+  | 'storage_unavailable'
+  | 'processing_unavailable';
+export interface CarImage {
+  id: string;
+  altText: string;
+  displayOrder: number;
+  isPrimary: boolean;
+  contentUrl: string;
+  width: number;
+  height: number;
+}
+export interface AdminCarImage {
+  id: string;
+  altText: string;
+  displayOrder: number;
+  isPrimary: boolean;
+  status: CarImageStatus;
+  scanState: CarImageScanState;
+  failureCategory: CarImageFailure | null;
+  revision: number;
+  uploadExpiresAt: string;
+  completedAt: string | null;
+  verifiedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface CreateCarImageUploadRequest {
+  contentType: 'image/jpeg' | 'image/png' | 'image/webp';
+  size: number;
+  checksumSha256: string;
+  altText: string;
+}
+export interface UpdateCarImageRequest {
+  altText?: string;
+  displayOrder?: number;
+}
+export interface CarImageUploadAuthorization {
+  image: AdminCarImage;
+  upload: { url: string; fields: Record<string, string>; expiresAt: string };
+}
+export interface AdminCarImageListData {
+  items: AdminCarImage[];
+  revision: number;
+}
 export type Role = 'customer' | 'admin';
 export interface AuthUser {
   id: string;
@@ -45,6 +106,7 @@ export interface CarSummary {
   fuelType: CarFuelType;
   seats: number;
   dailyRate: CarMoney;
+  images?: CarImage[];
 }
 export interface CarDetail extends CarSummary {
   description: string;

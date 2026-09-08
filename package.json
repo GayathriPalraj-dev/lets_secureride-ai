@@ -14,6 +14,7 @@
   "scripts": {
     "dev:client": "npm run dev --workspace @lets-secureride-ai/client",
     "dev:server": "npm run dev --workspace @lets-secureride-ai/server",
+    "car-images:indexes": "npm run car-images:indexes --workspace @lets-secureride-ai/server --",
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test --workspaces --if-present",

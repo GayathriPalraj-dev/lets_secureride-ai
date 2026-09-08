@@ -18,6 +18,7 @@ import { AdminBookingsPage } from '../pages/AdminBookingsPage';
 import { PaymentPage } from '../pages/PaymentPage';
 import { PaymentReturnPage } from '../pages/PaymentReturnPage';
 import { AdminPaymentsPage } from '../pages/AdminPaymentsPage';
+import { AdminCarImagesPage } from '../pages/AdminCarImagesPage';
 
 export function AppRoutes() {
   return (
@@ -39,6 +40,10 @@ export function AppRoutes() {
       <Route element={<RoleRoute role="admin" />}>
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/cars" element={<AdminCarsPage />} />
+        <Route
+          path="/admin/cars/:carId/images"
+          element={<AdminCarImagesPage />}
+        />
         <Route path="/admin/bookings" element={<AdminBookingsPage />} />
         <Route path="/admin/payments" element={<AdminPaymentsPage />} />
       </Route>

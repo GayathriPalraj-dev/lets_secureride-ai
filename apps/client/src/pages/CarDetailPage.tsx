@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import type { CarDetail } from '@lets-secureride-ai/contracts';
 import { useAuth } from '../auth/useAuth';
 import { CarError } from '../services/cars';
+import { CarImageGallery } from '../components/CarImageGallery';
 export function CarDetailPage() {
   const { carId = '' } = useParams();
   const auth = useAuth();
@@ -64,6 +65,7 @@ export function CarDetailPage() {
         {car!.make} {car!.model}
       </h1>
       <p>{car!.description}</p>
+      <CarImageGallery images={car!.images ?? []} />
       <dl>
         <dt>Year</dt>
         <dd>{car!.year}</dd>

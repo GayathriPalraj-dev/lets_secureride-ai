@@ -16,6 +16,8 @@ import {
   bookingPaymentsRouter,
   paymentsRouter,
 } from './payments.js';
+import { carImagesRouter } from './car-images.js';
+import type { CarImageService } from '../car-images/service.js';
 export interface ApiDependencies {
   auth: AuthDependencies;
   authorizationEvents: AuthorizationEvents;
@@ -24,6 +26,9 @@ export interface ApiDependencies {
   payments?: PaymentService;
   paymentLimiter?: Parameters<typeof paymentsRouter>[0]['limiter'];
   paymentWebhook?: RequestHandler;
+  carImages?: CarImageService;
+  imageLimiter?: Parameters<typeof carImagesRouter>[0]['limit'];
+  imageScanEvents?: RequestHandler;
 }
 export function apiRouter(
   config: Config,
@@ -74,6 +79,17 @@ export function apiRouter(
       router.use('/payments', paymentsRouter(paymentDependencies));
       router.use('/admin/payments', adminPaymentsRouter(paymentDependencies));
     }
+    if (dependencies.carImages && dependencies.imageLimiter)
+      router.use(
+        '/',
+        carImagesRouter({
+          auth: dependencies.auth.service,
+          service: dependencies.carImages,
+          authorizationEvents: dependencies.authorizationEvents,
+          origin: dependencies.auth.origin,
+          limit: dependencies.imageLimiter,
+        }),
+      );
   }
   return router;
 }

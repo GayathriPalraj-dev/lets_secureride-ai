@@ -94,6 +94,11 @@ export function AdminCarsPage() {
   return (
     <main>
       <h1>Car inventory</h1>
+      {cars.map((car) => (
+        <a key={car.id} href={`/admin/cars/${car.id}/images`}>
+          Manage images for {car.make} {car.model}
+        </a>
+      ))}
       <button
         onClick={() => {
           setEditing(undefined);

@@ -5,6 +5,11 @@ import type {
 } from '@lets-secureride-ai/contracts';
 import type { CarRecord } from './repository.js';
 
+const toPublicDailyRate = (amountMinor: number) => ({
+  amountMinor,
+  currency: 'INR' as const,
+});
+
 export function toCarSummary(car: CarRecord): CarSummary {
   return {
     id: car.id,
@@ -16,7 +21,7 @@ export function toCarSummary(car: CarRecord): CarSummary {
     transmission: car.transmission,
     fuelType: car.fuelType,
     seats: car.seats,
-    dailyRate: { amountMinor: car.dailyRateMinor, currency: 'INR' },
+    dailyRate: toPublicDailyRate(car.dailyRateMinor),
   };
 }
 export function allowCustomerCarSummary(car: CarSummary): CarSummary {
@@ -30,10 +35,7 @@ export function allowCustomerCarSummary(car: CarSummary): CarSummary {
     transmission: car.transmission,
     fuelType: car.fuelType,
     seats: car.seats,
-    dailyRate: {
-      amountMinor: car.dailyRate.amountMinor,
-      currency: 'INR',
-    },
+    dailyRate: toPublicDailyRate(car.dailyRate.amountMinor),
   };
 }
 export function allowCustomerCarDetail(car: CarDetail): CarDetail {
@@ -47,10 +49,7 @@ export function allowCustomerCarDetail(car: CarDetail): CarDetail {
     transmission: car.transmission,
     fuelType: car.fuelType,
     seats: car.seats,
-    dailyRate: {
-      amountMinor: car.dailyRate.amountMinor,
-      currency: 'INR',
-    },
+    dailyRate: toPublicDailyRate(car.dailyRate.amountMinor),
     description: car.description,
     features: [...car.features],
   };

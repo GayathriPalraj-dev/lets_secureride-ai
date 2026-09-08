@@ -26,6 +26,10 @@ import type {
   PaymentListQuery,
   AdminPaymentListData,
   AdminPaymentListQuery,
+  AdminCarImage,
+  AdminCarImageListData,
+  CreateCarImageUploadRequest,
+  UpdateCarImageRequest,
 } from '@lets-secureride-ai/contracts';
 export interface AuthState {
   status: 'loading' | 'authenticated' | 'unauthenticated';
@@ -79,6 +83,36 @@ export interface AuthState {
     action: 'reconcile' | 'refund',
     reason?: string,
   ): Promise<AdminPayment>;
+  adminCarImages?(carId: string): Promise<AdminCarImageListData>;
+  authorizeCarImage?(
+    carId: string,
+    body: CreateCarImageUploadRequest,
+    revision: number,
+  ): Promise<
+    import('@lets-secureride-ai/contracts').CarImageUploadAuthorization
+  >;
+  completeCarImage?(
+    carId: string,
+    imageId: string,
+    revision: number,
+  ): Promise<AdminCarImage>;
+  updateCarImage?(
+    carId: string,
+    imageId: string,
+    revision: number,
+    body: UpdateCarImageRequest,
+  ): Promise<AdminCarImage>;
+  primaryCarImage?(
+    carId: string,
+    imageId: string,
+    revision: number,
+  ): Promise<AdminCarImage>;
+  removeCarImage?(
+    carId: string,
+    imageId: string,
+    revision: number,
+  ): Promise<AdminCarImage>;
+  carImageContent?(url: string, signal?: AbortSignal): Promise<Blob>;
   retry(): void;
 }
 export const AuthContext = createContext<AuthState | null>(null);
