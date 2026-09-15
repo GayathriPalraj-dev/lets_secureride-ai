@@ -4,7 +4,14 @@ import { fixture, credentials } from './helpers/auth.js';
 import { createAuthEvents } from '../auth/events.js';
 import { createLogger } from '../config/logger.js';
 import { parseEnv } from '../config/env.js';
+import { createApp } from '../app.js';
 describe('auth transport and abuse controls', () => {
+  it('trusts forwarded addresses only from an explicitly configured loopback proxy', () => {
+    expect(createApp(parseEnv({})).get('trust proxy')).toBe(false);
+    expect(
+      createApp(parseEnv({ TRUST_PROXY: 'loopback' })).get('trust proxy'),
+    ).toBe('loopback');
+  });
   it.each(['register', 'login', 'refresh', 'logout', 'logout-all'])(
     'rejects missing origin on %s',
     async (endpoint) => {
@@ -181,5 +188,27 @@ describe('auth transport and abuse controls', () => {
     );
     expect(lines.length).toBe(1);
     expect(lines.join('').includes('synthetic-sensitive')).toBe(false);
+  });
+  it('redacts SSM configuration values and response metadata', () => {
+    const lines: string[] = [];
+    const logger = createLogger(parseEnv({ LOG_LEVEL: 'info' }), {
+      write: (line) => {
+        lines.push(line);
+      },
+    });
+    logger.info(
+      {
+        SECURERIDE_CONFIG_PARAMETER: 'synthetic-parameter-name',
+        response: {
+          Parameter: { Value: 'synthetic-configuration-secret' },
+          $metadata: { requestId: 'synthetic-request-id' },
+        },
+      },
+      'test',
+    );
+    const output = lines.join('');
+    expect(output).not.toContain('synthetic-parameter-name');
+    expect(output).not.toContain('synthetic-configuration-secret');
+    expect(output).not.toContain('synthetic-request-id');
   });
 });

@@ -8,6 +8,7 @@ describe('foundation environment', () => {
       PORT: 5000,
       CLIENT_ORIGIN: 'http://localhost:5173',
       LOG_LEVEL: 'info',
+      TRUST_PROXY: 'false',
     });
   });
   it('ignores future placeholders', () => {
@@ -25,6 +26,11 @@ describe('foundation environment', () => {
     expect(() =>
       parseEnv({ CLIENT_ORIGIN: 'https://example.com/path' }),
     ).toThrow('CLIENT_ORIGIN');
+  });
+  it('allows only disabled or loopback reverse-proxy trust', () => {
+    expect(parseEnv({ TRUST_PROXY: 'loopback' }).TRUST_PROXY).toBe('loopback');
+    expect(() => parseEnv({ TRUST_PROXY: 'true' })).toThrow('TRUST_PROXY');
+    expect(() => parseEnv({ TRUST_PROXY: '1' })).toThrow('TRUST_PROXY');
   });
 });
 

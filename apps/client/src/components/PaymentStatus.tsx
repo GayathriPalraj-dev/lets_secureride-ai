@@ -9,6 +9,7 @@ const labels: Record<Status, string> = {
   processing: 'Payment processing',
   succeeded: 'Paid',
   canceled: 'Payment cancelled',
+  pay_at_pickup: 'Pay at pickup selected',
   reconciliation_required: 'Payment status being verified',
 };
 export function PaymentStatus({

@@ -1,0 +1,258 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SecureRide free-focused S3, CloudFront, HTTP API, and Lambda deployment.
+
+Parameters:
+  LambdaArtifactBucket:
+    Type: String
+    Description: Existing bucket containing the immutable Lambda ZIP.
+  LambdaArtifactKey:
+    Type: String
+  LambdaArtifactVersion:
+    Type: String
+    Description: Required immutable S3 object version ID.
+  RuntimeConfigParameterName:
+    Type: String
+    AllowedPattern: '^/[A-Za-z0-9_.\-/]+$'
+    Description: Existing SSM Standard SecureString parameter name; never its value.
+  ExpectedClientOrigin:
+    Type: String
+    AllowedPattern: '^https://[^/]+$'
+
+Resources:
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [POST]
+            AllowedOrigins: [!Ref ExpectedClientOrigin]
+            MaxAge: 300
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireAbandonedQuarantine
+            Status: Enabled
+            Prefix: quarantine/
+            ExpirationInDays: 2
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-api'
+      RetentionInDays: 7
+
+  RuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SecureRideLambdaMinimum
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub '${ApiLogGroup.Arn}:*'
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${RuntimeConfigParameterName}'
+              - Effect: Allow
+                Action: [s3:GetBucketLocation, s3:ListBucket]
+                Resource: !GetAtt MediaBucket.Arn
+                Condition:
+                  { StringLike: { 's3:prefix': [quarantine/*, ready/*] } }
+              - Effect: Allow
+                Action:
+                  [
+                    s3:PutObject,
+                    s3:GetObject,
+                    s3:GetObjectVersion,
+                    s3:DeleteObject,
+                    s3:DeleteObjectVersion,
+                  ]
+                Resource:
+                  - !Sub '${MediaBucket.Arn}/quarantine/*'
+                  - !Sub '${MediaBucket.Arn}/ready/*'
+
+  ApiFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: ApiLogGroup
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-api'
+      Runtime: nodejs24.x
+      Architectures: [x86_64]
+      Handler: apps/server/dist/lambda.handler
+      MemorySize: 1024
+      Timeout: 29
+      ReservedConcurrentExecutions: 2
+      Role: !GetAtt RuntimeRole.Arn
+      Code:
+        S3Bucket: !Ref LambdaArtifactBucket
+        S3Key: !Ref LambdaArtifactKey
+        S3ObjectVersion: !Ref LambdaArtifactVersion
+      Environment:
+        Variables:
+          SECURERIDE_CONFIG_PARAMETER: !Ref RuntimeConfigParameterName
+          EXPECTED_CLIENT_ORIGIN: !Ref ExpectedClientOrigin
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-api'
+      ProtocolType: HTTP
+      DisableExecuteApiEndpoint: false
+
+  ApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ApiFunction.Arn
+      PayloadFormatVersion: '2.0'
+      TimeoutInMillis: 29000
+
+  ApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'ANY /{proxy+}'
+      Target: !Sub 'integrations/${ApiIntegration}'
+
+  ApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: '$default'
+      AutoDeploy: true
+
+  ApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ApiFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*'
+
+  FrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-frontend-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  ApiOriginRequestPolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Properties:
+      OriginRequestPolicyConfig:
+        Name: !Sub '${AWS::StackName}-api-request'
+        CookiesConfig: { CookieBehavior: all }
+        QueryStringsConfig: { QueryStringBehavior: all }
+        HeadersConfig:
+          HeaderBehavior: whitelist
+          Headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - Origin
+            - Stripe-Signature
+            - X-CSRF-Protection
+            - If-Match
+            - X-Car-Image-Signature
+            - Access-Control-Request-Method
+            - Access-Control-Request-Headers
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: frontend
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig: { OriginAccessIdentity: '' }
+            OriginAccessControlId: !Ref FrontendOriginAccessControl
+          - Id: api
+            DomainName:
+              Fn::Select:
+                - 2
+                - Fn::Split:
+                    - /
+                    - !GetAtt HttpApi.ApiEndpoint
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              HTTPSPort: 443
+              OriginSSLProtocols: [TLSv1.2]
+        DefaultCacheBehavior:
+          TargetOriginId: frontend
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          Compress: true
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
+            CachedMethods: [GET, HEAD, OPTIONS]
+            CachePolicyId: 413f160e-4c4e-4d62-b932-2cc3b028e34a
+            OriginRequestPolicyId: !Ref ApiOriginRequestPolicy
+            Compress: true
+        ViewerCertificate: { CloudFrontDefaultCertificate: true }
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+
+Outputs:
+  FrontendBucketName: { Value: !Ref FrontendBucket }
+  MediaBucketName: { Value: !Ref MediaBucket }
+  ApiEndpoint: { Value: !GetAtt HttpApi.ApiEndpoint }
+  LambdaFunctionName: { Value: !Ref ApiFunction }
+  DistributionId: { Value: !Ref Distribution }
+  DistributionDomainName: { Value: !GetAtt Distribution.DomainName }

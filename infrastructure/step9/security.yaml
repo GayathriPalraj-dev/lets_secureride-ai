@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Durable Step 9 image malware scanning and authenticated event delivery.
+Parameters:
+  BucketName: { Type: String }
+  TransformerCodeKey: { Type: String }
+  TransformerCodeVersion: { Type: String }
+  EventEndpoint: { Type: String, NoEcho: true }
+Resources:
+  EventSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Step 9 car image event HMAC secret
+      GenerateSecretString: { ExcludePunctuation: true, PasswordLength: 48 }
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties: { MessageRetentionPeriod: 1209600, SqsManagedSseEnabled: true }
+  TransformerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-transformer'
+      RetentionInDays: 3
+  TransformerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: transformer-minimum
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub '${TransformerLogGroup.Arn}:*'
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref EventSecret
+  Transformer:
+    Type: AWS::Lambda::Function
+    DependsOn: TransformerLogGroup
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-transformer'
+      Runtime: nodejs22.x
+      Handler: event-transformer.handler
+      Timeout: 15
+      MemorySize: 128
+      Role: !GetAtt TransformerRole.Arn
+      Code:
+        S3Bucket: !Ref BucketName
+        S3Key: !Ref TransformerCodeKey
+        S3ObjectVersion: !Ref TransformerCodeVersion
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref BucketName
+          EVENT_ENDPOINT: !Ref EventEndpoint
+          EVENT_SECRET_ID: !Ref EventSecret
+  ScanResultRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source: [aws.guardduty]
+        detail-type: [GuardDuty Malware Protection Object Scan Result]
+        detail:
+          s3ObjectDetails:
+            bucketName: [!Ref BucketName]
+            objectKey: [{ prefix: quarantine/ }]
+      Targets:
+        - Arn: !GetAtt Transformer.Arn
+          Id: transformer
+          RetryPolicy: { MaximumEventAgeInSeconds: 3600, MaximumRetryAttempts: 8 }
+          DeadLetterConfig: { Arn: !GetAtt DeadLetterQueue.Arn }
+  DeadLetterPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref DeadLetterQueue]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: sqs:SendMessage
+            Resource: !GetAtt DeadLetterQueue.Arn
+            Condition: { ArnEquals: { aws:SourceArn: !GetAtt ScanResultRule.Arn } }
+  InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref Transformer
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ScanResultRule.Arn
+  GuardDutyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: malware-protection-plan.guardduty.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: guardduty-single-bucket
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ManagedEventRule
+                Effect: Allow
+                Action: [events:PutRule, events:DeleteRule, events:PutTargets, events:RemoveTargets]
+                Resource: !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/DO-NOT-DELETE-AmazonGuardDutyMalwareProtectionS3*'
+                Condition: { StringLike: { events:ManagedBy: malware-protection-plan.guardduty.amazonaws.com } }
+              - Sid: InspectManagedEventRule
+                Effect: Allow
+                Action: [events:DescribeRule, events:ListTargetsByRule]
+                Resource: !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/DO-NOT-DELETE-AmazonGuardDutyMalwareProtectionS3*'
+              - Sid: BucketConfiguration
+                Effect: Allow
+                Action: [s3:GetBucketNotification, s3:PutBucketNotification, s3:GetBucketLocation, s3:GetBucketVersioning]
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${BucketName}'
+              - Sid: ListQuarantine
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${BucketName}'
+                Condition: { StringLike: { s3:prefix: [quarantine/*] } }
+              - Sid: ReadQuarantine
+                Effect: Allow
+                Action: [s3:GetObject, s3:GetObjectVersion]
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${BucketName}/quarantine/*'
+              - Sid: ValidationObject
+                Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${BucketName}/malware-protection-resource-validation-object'
+  MalwarePlan:
+    Type: AWS::GuardDuty::MalwareProtectionPlan
+    Properties:
+      Role: !GetAtt GuardDutyRole.Arn
+      ProtectedResource:
+        S3Bucket: { BucketName: !Ref BucketName, ObjectPrefixes: [quarantine/] }
+      Actions: { Tagging: { Status: DISABLED } }
+      Tags:
+        - { Key: Project, Value: lets-secureride-ai }
+        - { Key: Purpose, Value: car-image-security }
+Outputs:
+  EventSecretId: { Value: !Ref EventSecret }
+  MalwarePlanId: { Value: !Ref MalwarePlan }

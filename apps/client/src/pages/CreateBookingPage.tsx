@@ -16,9 +16,18 @@ export function CreateBookingPage() {
     endDateExclusive,
   });
   return (
-    <main>
-      <h1>Create booking</h1>
-      <BookingForm
+    <main id="main" className="page-shell booking-create-page">
+      <section className="booking-visual">
+        <div>
+          <p className="eyebrow">Your journey starts here</p>
+          <h1>Reserve your SecureRide</h1>
+          <p>Choose your dates, review the exact price and book with confidence.</p>
+        </div>
+      </section>
+      <section className="booking-create-card">
+        <p className="eyebrow">Secure booking</p>
+        <h2>Select your travel dates</h2>
+        <BookingForm
         pending={pending}
         onQuote={async (start, end) => {
           setPending(true);
@@ -42,14 +51,16 @@ export function CreateBookingPage() {
             setPending(false);
           }
         }}
-      />
-      {quote && (
-        <p role="status">
-          {quote.available ? 'Available' : 'Unavailable'} · ₹
-          {quote.total.amountMinor / 100}
-        </p>
-      )}
-      {error && <p role="alert">{error}</p>}
+        />
+        {quote && (
+          <p className="quote-result" role="status">
+            <span>{quote.available ? 'Available' : 'Unavailable'}</span>
+            <strong>₹{quote.total.amountMinor / 100}</strong>
+          </p>
+        )}
+        {error && <p className="booking-error" role="alert">{error}</p>}
+        <p className="secure-note">🔒 Your booking details are encrypted and protected.</p>
+      </section>
     </main>
   );
 }

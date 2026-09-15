@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">SecureRide vehicle illustration</title>
+  <desc id="desc">A modern sport utility vehicle on a mountain road at sunrise.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9ed4f2"/><stop offset=".52" stop-color="#d9e9ef"/><stop offset="1" stop-color="#8aa1af"/></linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#173e61"/><stop offset=".45" stop-color="#071c31"/><stop offset=".72" stop-color="#245477"/><stop offset="1" stop-color="#061624"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9e6f8"/><stop offset="1" stop-color="#244c68"/></linearGradient>
+    <radialGradient id="sun"><stop stop-color="#fff6cf"/><stop offset="1" stop-color="#ffd078" stop-opacity="0"/></radialGradient>
+    <filter id="shadow"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#sky)"/>
+  <circle cx="930" cy="142" r="160" fill="url(#sun)"/>
+  <path d="M0 365 190 190 344 335 503 157 720 365 865 240 1010 360 1200 186V470H0Z" fill="#48677a" opacity=".64"/>
+  <path d="M0 405 270 262 430 402 650 244 823 408 1006 286 1200 405V518H0Z" fill="#213f53" opacity=".86"/>
+  <path d="M0 500c272-70 542-51 1200-8v183H0Z" fill="#142635"/>
+  <path d="M0 570c324-47 722-52 1200 17" fill="none" stroke="#7a8990" stroke-width="98"/>
+  <path d="M0 570c324-47 722-52 1200 17" fill="none" stroke="#e8f2f7" stroke-width="7" stroke-dasharray="62 46" opacity=".75"/>
+  <ellipse cx="715" cy="548" rx="348" ry="58" fill="#000" opacity=".35" filter="url(#shadow)"/>
+  <g transform="translate(320 265)">
+    <path d="M101 195 170 75c20-35 57-55 98-55h236c44 0 86 23 109 61l65 108 92 25c36 10 60 43 60 80v55H38v-66c0-41 25-77 63-88Z" fill="url(#body)"/>
+    <path d="m211 88-55 99h232V80H270c-25 0-47 11-59 8Z" fill="url(#glass)" opacity=".88"/>
+    <path d="M414 80v107h197l-55-84c-10-15-27-23-45-23Z" fill="url(#glass)" opacity=".82"/>
+    <path d="M52 259h748" stroke="#4d83a9" stroke-width="9" opacity=".7"/>
+    <path d="M696 219h102l26 27-129 4Z" fill="#d5f3ff"/>
+    <path d="M43 222h86l-17 35-73-5Z" fill="#f3d978"/>
+    <circle cx="198" cy="343" r="70" fill="#06121c"/><circle cx="198" cy="343" r="38" fill="#a9bac4"/><circle cx="655" cy="343" r="70" fill="#06121c"/><circle cx="655" cy="343" r="38" fill="#a9bac4"/>
+    <path d="M38 317h92m596 0h104" stroke="#091b2b" stroke-width="28"/>
+    <path d="M283 211h64m157 0h64" stroke="#acc8d8" stroke-width="7" stroke-linecap="round"/>
+  </g>
+</svg>

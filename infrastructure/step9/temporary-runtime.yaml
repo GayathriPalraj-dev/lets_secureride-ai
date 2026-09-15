@@ -1,0 +1,178 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Temporary Step 9 same-origin HTTPS acceptance runtime.
+Parameters:
+  VpcId: { Type: AWS::EC2::VPC::Id }
+  SubnetId: { Type: AWS::EC2::Subnet::Id }
+  AmiId: { Type: AWS::EC2::Image::Id }
+  CloudFrontPrefixListId: { Type: String }
+  BucketName: { Type: String }
+  DeploymentKey: { Type: String }
+  DeploymentVersion: { Type: String }
+Resources:
+  OriginSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Temporary CloudFront origin verification secret
+      GenerateSecretString: { ExcludePunctuation: true, PasswordLength: 48 }
+  RuntimeSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Temporary Step 9 runtime environment
+      GenerateSecretString: { ExcludePunctuation: true, PasswordLength: 48 }
+  RuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore]
+      Policies:
+        - PolicyName: car-image-runtime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetBucketLocation, s3:ListBucket]
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${BucketName}'
+                Condition: { StringLike: { s3:prefix: [quarantine/*, ready/*] } }
+              - Effect: Allow
+                Action: [s3:PutObject, s3:GetObject, s3:GetObjectVersion, s3:DeleteObject, s3:DeleteObjectVersion]
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}/quarantine/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}/ready/*'
+              - Effect: Allow
+                Action: s3:GetObjectVersion
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${BucketName}/${DeploymentKey}'
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref RuntimeSecret
+  RuntimeProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: { Roles: [!Ref RuntimeRole] }
+  OriginSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: CloudFront origin only; no SSH
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, SourcePrefixListId: !Ref CloudFrontPrefixListId }
+      SecurityGroupEgress:
+        - { IpProtocol: '-1', CidrIp: 0.0.0.0/0 }
+  RuntimeInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: t3.micro
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds: [!Ref OriginSecurityGroup]
+      IamInstanceProfile: !Ref RuntimeProfile
+      MetadataOptions: { HttpEndpoint: enabled, HttpTokens: required }
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs: { DeleteOnTermination: true, Encrypted: true, VolumeSize: 8, VolumeType: gp3 }
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euo pipefail
+          dnf install -y nginx unzip
+          cd /tmp
+          curl -fsSLO https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-x64.tar.xz
+          curl -fsSLO https://nodejs.org/dist/v24.20.0/SHASUMS256.txt
+          grep ' node-v24.20.0-linux-x64.tar.xz$' SHASUMS256.txt | sha256sum -c -
+          tar -xJf node-v24.20.0-linux-x64.tar.xz -C /usr/local --strip-components=1
+          mkdir -p /opt/lets-secureride /var/www/maintenance /etc/lets-secureride
+          aws s3api get-object --bucket '${BucketName}' --key '${DeploymentKey}' --version-id '${DeploymentVersion}' /tmp/app.zip >/dev/null
+          unzip -q /tmp/app.zip -d /opt/lets-secureride
+          cd /opt/lets-secureride
+          npm ci >/dev/null
+          npm run build >/dev/null
+          printf '<!doctype html><title>Preparing</title><h1>Preparing secure acceptance environment</h1>' >/var/www/maintenance/index.html
+          cat >/etc/nginx/conf.d/app.conf <<'NGINX'
+          map $http_x_origin_verify $origin_allowed { default 0; '{{resolve:secretsmanager:${OriginSecret}:SecretString}}' 1; }
+          server {
+            listen 80 default_server;
+            server_name _;
+            if ($origin_allowed = 0) { return 403; }
+            root /var/www/maintenance;
+            location /api/ { proxy_pass http://127.0.0.1:5000; proxy_set_header Host $host; proxy_set_header X-Forwarded-Proto https; }
+            location / { try_files $uri $uri/ /index.html; }
+          }
+          NGINX
+          rm -f /etc/nginx/conf.d/default.conf /tmp/app.zip /tmp/node-v24.20.0-linux-x64.tar.xz /tmp/SHASUMS256.txt
+          systemctl enable --now nginx
+          cat >/etc/systemd/system/lets-secureride.service <<'UNIT'
+          [Unit]
+          Description=Lets SecureRide API
+          After=network-online.target
+          [Service]
+          Type=simple
+          User=ec2-user
+          WorkingDirectory=/opt/lets-secureride/apps/server
+          EnvironmentFile=/etc/lets-secureride/runtime.env
+          ExecStart=/usr/local/bin/node dist/server.js
+          Restart=on-failure
+          NoNewPrivileges=true
+          PrivateTmp=true
+          ProtectSystem=strict
+          ReadWritePaths=/tmp
+          [Install]
+          WantedBy=multi-user.target
+          UNIT
+      Tags:
+        - { Key: Project, Value: lets-secureride-ai }
+        - { Key: Purpose, Value: step9-temporary-acceptance }
+  RuntimeAddress:
+    Type: AWS::EC2::EIP
+    Properties: { Domain: vpc }
+  AddressAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties: { AllocationId: !GetAtt RuntimeAddress.AllocationId, InstanceId: !Ref RuntimeInstance }
+  SecurityHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub '${AWS::StackName}-security'
+        SecurityHeadersConfig:
+          ContentTypeOptions: { Override: true }
+          FrameOptions: { FrameOption: DENY, Override: true }
+          ReferrerPolicy: { ReferrerPolicy: no-referrer, Override: true }
+          StrictTransportSecurity: { AccessControlMaxAgeSec: 31536000, IncludeSubdomains: true, Override: true }
+          XSSProtection: { Protection: true, ModeBlock: true, Override: true }
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    DependsOn: AddressAssociation
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_200
+        Origins:
+          - Id: runtime
+            DomainName: !GetAtt RuntimeInstance.PublicDnsName
+            OriginCustomHeaders:
+              - HeaderName: X-Origin-Verify
+                HeaderValue: !Sub '{{resolve:secretsmanager:${OriginSecret}:SecretString}}'
+            CustomOriginConfig: { HTTPPort: 80, HTTPSPort: 443, OriginProtocolPolicy: http-only }
+        DefaultCacheBehavior:
+          TargetOriginId: runtime
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          CachePolicyId: 413f160e-4c4e-4d62-b932-2cc3b028e34a
+          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
+          ResponseHeadersPolicyId: !Ref SecurityHeaders
+          Compress: true
+        ViewerCertificate: { CloudFrontDefaultCertificate: true, MinimumProtocolVersion: TLSv1.2_2021 }
+      Tags:
+        - { Key: Project, Value: lets-secureride-ai }
+        - { Key: Purpose, Value: step9-temporary-acceptance }
+Outputs:
+  RuntimeSecretId: { Value: !Ref RuntimeSecret }
+  RuntimeInstanceId: { Value: !Ref RuntimeInstance }
+  RuntimeAddress: { Value: !Ref RuntimeAddress }
+  DistributionDomain: { Value: !GetAtt Distribution.DomainName }
+  DistributionId: { Value: !Ref Distribution }

@@ -51,7 +51,7 @@ describe('car deletion image guard', () => {
   });
   it('wires the production car service to the existing image repository', () => {
     const source = readFileSync(
-      new URL('../server.ts', import.meta.url),
+      new URL('../bootstrap.ts', import.meta.url),
       'utf8',
     );
     expect(source).toContain(

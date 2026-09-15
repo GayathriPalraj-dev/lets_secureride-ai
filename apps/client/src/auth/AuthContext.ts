@@ -71,6 +71,8 @@ export interface AuthState {
   startPayment?(
     bookingId: string,
     revision: number,
+    method: 'online' | 'pay_at_pickup',
+    couponCode?: string,
   ): Promise<{ payment: CustomerPayment; confirmation?: PaymentConfirmation }>;
   paymentByBooking?(bookingId: string): Promise<CustomerPayment>;
   paymentDetail?(id: string): Promise<CustomerPayment>;

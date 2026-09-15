@@ -257,7 +257,9 @@ export type PaymentStatus =
   | 'processing'
   | 'succeeded'
   | 'canceled'
+  | 'pay_at_pickup'
   | 'reconciliation_required';
+export type PaymentMethod = 'online' | 'pay_at_pickup';
 export type RefundStatus =
   'none' | 'required' | 'pending' | 'succeeded' | 'failed';
 export type PaymentFailureCategory =
@@ -270,12 +272,20 @@ export interface CustomerPayment {
   id: string;
   bookingId: string;
   amount: BookingMoney;
+  originalAmount: BookingMoney;
+  discount: BookingMoney;
+  couponCode: string | null;
+  method: PaymentMethod;
   status: PaymentStatus;
   refundStatus: RefundStatus;
   failureCategory: PaymentFailureCategory | null;
   revision: number;
   createdAt: string;
   updatedAt: string;
+}
+export interface StartPaymentRequest {
+  method: PaymentMethod;
+  couponCode?: string;
 }
 export interface AdminPayment extends CustomerPayment {
   customerReference: string;

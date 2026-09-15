@@ -17,6 +17,7 @@ const schema = z.object({
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
     .default('info'),
+  TRUST_PROXY: z.enum(['false', 'loopback']).default('false'),
 });
 export type Config = z.infer<typeof schema>;
 

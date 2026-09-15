@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import { AuthError } from '../services/auth';
+import { DashboardLayout } from '../components/DashboardLayout';
+import { PageIntro } from '../components/PageIntro';
 
 type State = 'checking' | 'allowed' | 'forbidden' | 'unauthenticated' | 'error';
 
@@ -37,7 +39,7 @@ export function AdminPage() {
   if (state === 'checking') return <p role="status">Verifying admin access…</p>;
   if (state === 'error')
     return (
-      <main>
+      <main id="main" className="page-shell">
         <h1>Admin access unavailable</h1>
         <p role="alert">Unable to verify access. Please try again.</p>
         <button
@@ -51,12 +53,30 @@ export function AdminPage() {
       </main>
     );
   return (
-    <main>
-      <h1>Administration</h1>
-      <p>Admin access verified.</p>
-      <Link to="/admin/cars">Manage car inventory</Link>
-      <Link to="/admin/bookings">Manage bookings</Link>
-      <Link to="/admin/payments">Manage payments</Link>
+    <main id="main" className="page-shell">
+      <DashboardLayout admin>
+        <PageIntro eyebrow="Operations" title="Administration">
+          Monitor inventory, bookings and payment reconciliation.
+        </PageIntro>
+        <p className="sr-only">Admin access verified.</p>
+        <div className="feature-grid">
+          <article className="feature-card">
+            <h2>Car inventory</h2>
+            <p>Manage availability, vehicle details and gallery images.</p>
+            <Link to="/admin/cars">Manage car inventory</Link>
+          </article>
+          <article className="feature-card">
+            <h2>Bookings</h2>
+            <p>Review and manage customer booking requests.</p>
+            <Link to="/admin/bookings">Manage bookings</Link>
+          </article>
+          <article className="feature-card">
+            <h2>Payments</h2>
+            <p>Review payment and reconciliation status safely.</p>
+            <Link to="/admin/payments">Manage payments</Link>
+          </article>
+        </div>
+      </DashboardLayout>
     </main>
   );
 }

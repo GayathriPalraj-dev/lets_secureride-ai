@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export function ForbiddenPage() {
   return (
-    <main>
+    <main id="main" className="page-shell">
       <h1>Access denied</h1>
       <p>You do not have permission to view this page.</p>
       <p>

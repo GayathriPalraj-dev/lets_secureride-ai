@@ -28,8 +28,14 @@ export function CarsPage() {
     };
   }, [auth.listCars, filters, attempt]);
   return (
-    <main>
-      <h1>Available cars</h1>
+    <main id="main" className="page-shell catalogue-page">
+      <header className="catalogue-hero">
+        <p className="eyebrow">Verified cars. Clear pricing.</p>
+        <h1>Find the right car for every journey</h1>
+        <p>
+          Explore six carefully selected vehicles, ready for your next road.
+        </p>
+      </header>
       <CarFilters
         value={filters}
         onChange={(value) => {

@@ -20,7 +20,7 @@ export function BookingsPage() {
     };
   }, [auth.listBookings]);
   return (
-    <main>
+    <main id="main" className="page-shell">
       <h1>Your bookings</h1>
       {error ? (
         <p role="alert">Unable to load bookings.</p>

@@ -203,8 +203,8 @@ export function createAuthSession(
       withAccess((token) =>
         bookingRequests.adminAction(token, id, revision, action, reason),
       ),
-    startPayment: (bookingId: string, revision: number) =>
-      withAccess((token) => paymentRequests.start(token, bookingId, revision)),
+    startPayment: (bookingId: string, revision: number, method: 'online' | 'pay_at_pickup', couponCode?: string) =>
+      withAccess((token) => paymentRequests.start(token, bookingId, revision, method, couponCode)),
     paymentByBooking: (bookingId: string) =>
       withAccess((token) => paymentRequests.byBooking(token, bookingId)),
     paymentDetail: (id: string) =>

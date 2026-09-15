@@ -92,21 +92,23 @@ export function AdminCarsPage() {
     }
   }
   return (
-    <main>
-      <h1>Car inventory</h1>
-      {cars.map((car) => (
-        <a key={car.id} href={`/admin/cars/${car.id}/images`}>
-          Manage images for {car.make} {car.model}
-        </a>
-      ))}
-      <button
-        onClick={() => {
-          setEditing(undefined);
-          setShowForm(true);
-        }}
-      >
-        Add car
-      </button>
+    <main id="main" className="page-shell admin-inventory-page">
+      <header className="admin-page-header">
+        <div>
+          <p className="eyebrow">Fleet management</p>
+          <h1>Car inventory</h1>
+          <p>Manage vehicles, availability and listing photos.</p>
+        </div>
+        <button
+          className="button button-accent"
+          onClick={() => {
+            setEditing(undefined);
+            setShowForm(true);
+          }}
+        >
+          <span aria-hidden="true">＋</span> Add car
+        </button>
+      </header>
       {showForm && (
         <CarForm
           car={editing}

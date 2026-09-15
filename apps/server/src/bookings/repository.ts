@@ -153,14 +153,15 @@ export function createBookingRepository(models: Models): BookingRepository {
     async create(v) {
       try {
         return await models.bookings.db.transaction(async (session) => {
+          const { at, ...booking } = v;
           const created = await models.bookings.create(
             [
               {
-                ...v,
+                ...booking,
                 currency: 'INR',
                 status: 'pending',
                 revision: 0,
-                statusChangedAt: v.at,
+                statusChangedAt: at,
                 statusChangedByRole: 'customer',
                 statusReason: null,
               },

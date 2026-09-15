@@ -14,6 +14,20 @@ export function paymentWebhookRouter(d: {
   const router = Router();
   router.post(
     '/',
+    (request, response, next) => {
+      if (request.headers['content-encoding']) {
+        response.status(415).json({
+          success: false,
+          error: {
+            code: 'UNSUPPORTED_ENCODING',
+            message: 'Compressed signed requests are not accepted',
+          },
+          requestId: request.requestId,
+        });
+        return;
+      }
+      next();
+    },
     express.raw({ type: 'application/json', limit: '64kb' }),
     d.coarseLimiter,
     createWebhookController(

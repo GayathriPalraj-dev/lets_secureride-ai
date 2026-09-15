@@ -21,7 +21,7 @@ export function AdminPaymentsPage() {
       .then(load)
       .catch(() => setError(true));
   return (
-    <main>
+    <main id="main" className="page-shell">
       <h1>Payment administration</h1>
       {error && <p role="alert">Unable to complete the payment operation.</p>}
       {!items ? (

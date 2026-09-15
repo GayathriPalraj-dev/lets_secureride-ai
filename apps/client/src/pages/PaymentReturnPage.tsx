@@ -32,7 +32,7 @@ export function PaymentReturnPage() {
     };
   }, [auth.paymentDetail, id]);
   return (
-    <main>
+    <main id="main" className="page-shell">
       <h1>Payment status</h1>
       {error ? (
         <p role="alert">Unable to verify payment status.</p>

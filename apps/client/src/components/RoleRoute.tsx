@@ -7,15 +7,28 @@ export function RoleRoute({ role }: { role: Role }) {
   const location = useLocation();
   if (auth.status === 'loading')
     return (
-      <div role="status">
-        Restoring your session…
-        {auth.error && (
-          <>
-            <p role="alert">{auth.error}</p>
-            <button onClick={auth.retry}>Retry</button>
-          </>
-        )}
-      </div>
+      <main id="main" className="page-shell recovery-page">
+        <section
+          className="recovery-card"
+          role="status"
+          aria-labelledby="role-session-title"
+        >
+          <span className="recovery-icon" aria-hidden="true">
+            ↻
+          </span>
+          <p className="eyebrow">Secure administration</p>
+          <h1 id="role-session-title">Restoring your session…</h1>
+          <p>We are securely verifying your administrator access.</p>
+          {auth.error && (
+            <>
+              <p className="recovery-error" role="alert">
+                {auth.error}
+              </p>
+              <button onClick={auth.retry}>Retry</button>
+            </>
+          )}
+        </section>
+      </main>
     );
   if (auth.status === 'unauthenticated')
     return (

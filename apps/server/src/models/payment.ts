@@ -7,6 +7,7 @@ export const paymentStatuses = [
   'processing',
   'succeeded',
   'canceled',
+  'pay_at_pickup',
   'reconciliation_required',
 ] as const;
 export const refundStatuses = [
@@ -40,6 +41,10 @@ export const paymentSchema = new Schema(
       validate: Number.isSafeInteger,
       immutable: true,
     },
+    originalAmountMinor: { type: Number, required: true, min: 50, validate: Number.isSafeInteger, immutable: true },
+    discountAmountMinor: { type: Number, required: true, min: 0, validate: Number.isSafeInteger, immutable: true },
+    couponCode: { type: String, maxlength: 24, default: null, immutable: true },
+    method: { type: String, enum: ['online', 'pay_at_pickup'], required: true, immutable: true },
     currency: { type: String, enum: ['INR'], required: true, immutable: true },
     status: {
       type: String,

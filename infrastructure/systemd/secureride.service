@@ -1,0 +1,25 @@
+[Unit]
+Description=SecureRide API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=secureride
+Group=secureride
+WorkingDirectory=/opt/secureride/app
+EnvironmentFile=/etc/secureride/server.env
+ExecStart=/usr/bin/node apps/server/dist/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/secureride
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

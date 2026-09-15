@@ -1,19 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import App from '../App';
 
-const health = {
-  success: true,
-  data: {
-    service: 'lets-secureride-ai-api',
-    status: 'ok',
-    timestamp: '2026-09-03T00:00:00.000Z',
-    uptimeSeconds: 42,
-    environment: 'test',
-  },
-  requestId: 'test-request',
-};
 function renderApp() {
   return render(
     <MemoryRouter>
@@ -22,70 +11,54 @@ function renderApp() {
   );
 }
 
-describe('foundation page', () => {
-  it('renders the exact application heading', () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => new Promise(() => {})),
-    );
+describe('SecureRide homepage', () => {
+  it('renders the branded journey heading', () => {
     renderApp();
     expect(
-      screen.getByRole('heading', { name: 'lets_secureride-ai', level: 1 }),
+      screen.getByRole('heading', {
+        name: 'Book your ride with confidence.',
+        level: 1,
+      }),
     ).toBeInTheDocument();
   });
-  it('announces loading while the request is pending', () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => new Promise(() => {})),
-    );
+  it('provides a skip link and main landmark', () => {
     renderApp();
-    expect(screen.getByRole('status')).toHaveTextContent('Checking API health');
+    expect(screen.getByText('Skip to main content')).toHaveAttribute(
+      'href',
+      '#main',
+    );
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main');
   });
-  it('shows a successful response and calls the versioned endpoint', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue({ ok: true, json: async () => health });
-    vi.stubGlobal('fetch', fetchMock);
+  it('provides primary and footer navigation', () => {
     renderApp();
-    expect(await screen.findByText('API is healthy')).toHaveAttribute(
-      'role',
-      'status',
-    );
-    expect(screen.getByText('lets-secureride-ai-api')).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/v1/health',
-      expect.objectContaining({ signal: expect.any(AbortSignal) }),
-    );
+    expect(
+      screen.getByRole('navigation', { name: 'Primary navigation' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'Footer navigation' }),
+    ).toBeInTheDocument();
   });
-  it('announces network failure accessibly', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue(new Error('network unavailable')),
-    );
+  it('shows the car search interface', () => {
     renderApp();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Unable to reach the API',
-    );
+    expect(
+      screen.getByRole('form', { name: 'Find a car' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Search cars' }),
+    ).toBeInTheDocument();
   });
-  it('handles an HTTP error', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: false, status: 503 }),
-    );
+  it('shows featured journey categories', () => {
     renderApp();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Unable to reach the API',
-    );
+    expect(
+      screen.getByRole('heading', { name: 'A car for every kind of journey' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Family comfort')).toBeInTheDocument();
   });
-  it('rejects an invalid successful response', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ success: true, data: {} }),
-      }),
-    );
+  it('opens the responsive navigation', () => {
     renderApp();
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    const toggle = screen.getByRole('button', { name: 'Toggle navigation' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
   });
 });

@@ -20,7 +20,12 @@ export function createApp(
 ) {
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', false);
+  // Production traffic is accepted only from a reverse proxy on this host.
+  // Never trust arbitrary forwarded headers from the public internet.
+  app.set(
+    'trust proxy',
+    config.TRUST_PROXY === 'loopback' ? 'loopback' : false,
+  );
   app.use(requestId);
   app.use('/api/v1/auth', (_req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');

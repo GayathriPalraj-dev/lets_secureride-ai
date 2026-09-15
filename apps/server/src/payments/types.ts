@@ -12,6 +12,10 @@ export interface PaymentRecord {
   bookingRevisionAtStart: number;
   bookingSnapshot: { inventoryCode: string; make: string; model: string };
   amountMinor: number;
+  originalAmountMinor: number;
+  discountAmountMinor: number;
+  couponCode: string | null;
+  method: 'online' | 'pay_at_pickup';
   currency: 'INR';
   status: PaymentStatus;
   providerPaymentIntentId: string | null;
@@ -35,7 +39,7 @@ export interface PaymentRecord {
 }
 export type ProviderStatus = Exclude<
   PaymentStatus,
-  'initializing' | 'reconciliation_required'
+  'initializing' | 'pay_at_pickup' | 'reconciliation_required'
 >;
 export interface ProviderPaymentIntent {
   id: string;

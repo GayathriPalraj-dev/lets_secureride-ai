@@ -28,7 +28,7 @@ export function AdminBookingsPage() {
       .finally(() => setPending(false));
   };
   return (
-    <main>
+    <main id="main" className="page-shell">
       <h1>Booking administration</h1>
       {error && <p role="alert">Unable to load bookings.</p>}
       {!items.length ? (

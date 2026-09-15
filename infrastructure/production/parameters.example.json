@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "LambdaArtifactBucket",
+    "ParameterValue": "EXISTING_ARTIFACT_BUCKET"
+  },
+  {
+    "ParameterKey": "LambdaArtifactKey",
+    "ParameterValue": "releases/secureride-SHA256.zip"
+  },
+  {
+    "ParameterKey": "LambdaArtifactVersion",
+    "ParameterValue": "IMMUTABLE_S3_VERSION_ID"
+  },
+  {
+    "ParameterKey": "RuntimeConfigParameterName",
+    "ParameterValue": "/secureride/production/runtime"
+  },
+  {
+    "ParameterKey": "ExpectedClientOrigin",
+    "ParameterValue": "https://EXPECTED_HOST.cloudfront.net"
+  }
+]

@@ -27,6 +27,10 @@ function payment(
     typeof value.bookingId !== 'string' ||
     !record(value.amount) ||
     !Number.isSafeInteger(value.amount.amountMinor) ||
+    !record(value.originalAmount) || !record(value.discount) ||
+    !Number.isSafeInteger(value.originalAmount.amountMinor) ||
+    !Number.isSafeInteger(value.discount.amountMinor) ||
+    !['online', 'pay_at_pickup'].includes(String(value.method)) ||
     value.amount.currency !== 'INR' ||
     typeof value.status !== 'string' ||
     typeof value.refundStatus !== 'string' ||
@@ -118,12 +122,12 @@ export function createPaymentRequests() {
     return { ...data, items: data.items.map((item) => payment(item, admin)) };
   };
   return {
-    start: async (token: string, bookingId: string, revision: number) => {
+    start: async (token: string, bookingId: string, revision: number, method: 'online' | 'pay_at_pickup', couponCode?: string) => {
       const data = await request(
         `bookings/${encodeURIComponent(bookingId)}/payment-session`,
         'POST',
         token,
-        {},
+        { method, ...(couponCode ? { couponCode } : {}) },
         revision,
       );
       const result: {

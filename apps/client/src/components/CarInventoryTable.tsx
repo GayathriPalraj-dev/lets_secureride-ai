@@ -1,4 +1,6 @@
 import type { AdminCar } from '@lets-secureride-ai/contracts';
+import { Link } from 'react-router-dom';
+import { localCarImage } from '../utils/carVisuals';
 export function CarInventoryTable({
   cars,
   pendingId,
@@ -21,7 +23,6 @@ export function CarInventoryTable({
             <th>Car</th>
             <th>Registration</th>
             <th>Status</th>
-            <th>Revision</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -29,32 +30,27 @@ export function CarInventoryTable({
           {cars.map((car) => (
             <tr key={car.id}>
               <td>
-                {car.make} {car.model}
-                <br />
-                <small>{car.inventoryCode}</small>
+                <div className="inventory-car">
+                  <img src={localCarImage(car)} alt="" />
+                  <div>
+                    <strong>{car.make} {car.model}</strong>
+                    <small>{car.inventoryCode}</small>
+                  </div>
+                </div>
               </td>
               <td>{car.registrationNumber}</td>
-              <td>{car.status}</td>
-              <td>{car.revision}</td>
+              <td><span className={`inventory-status is-${car.status}`}>{car.status}</span></td>
               <td>
-                <button
-                  disabled={pendingId === car.id}
-                  onClick={() => onEdit(car)}
-                >
-                  Edit
-                </button>
-                <button
-                  disabled={pendingId === car.id}
-                  onClick={() => onStatus(car)}
-                >
-                  {car.status === 'active' ? 'Deactivate' : 'Activate'}
-                </button>
-                <button
-                  disabled={pendingId === car.id || car.status === 'active'}
-                  onClick={() => onDelete(car)}
-                >
-                  Delete
-                </button>
+                <div className="inventory-actions">
+                  <Link className="button button-small inventory-images-link" to={`/admin/cars/${car.id}/images`}>
+                    Images
+                  </Link>
+                  <button className="button-small" disabled={pendingId === car.id} onClick={() => onEdit(car)}>Edit</button>
+                  <button className="button-small button-secondary" disabled={pendingId === car.id} onClick={() => onStatus(car)}>
+                    {car.status === 'active' ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button className="button-small inventory-delete" disabled={pendingId === car.id || car.status === 'active'} onClick={() => onDelete(car)}>Delete</button>
+                </div>
               </td>
             </tr>
           ))}

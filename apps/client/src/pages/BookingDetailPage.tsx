@@ -17,13 +17,13 @@ export function BookingDetailPage() {
   }, [auth.bookingDetail, id]);
   if (error)
     return (
-      <main>
+      <main id="main" className="page-shell">
         <h1>Booking unavailable</h1>
       </main>
     );
   if (!b) return <p role="status">Loading booking…</p>;
   return (
-    <main>
+    <main id="main" className="page-shell">
       <h1>
         {b.car.make} {b.car.model}
       </h1>

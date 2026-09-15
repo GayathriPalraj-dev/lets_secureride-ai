@@ -27,7 +27,7 @@ export function PaymentForm({ returnUrl }: { returnUrl: string }) {
   }
   return (
     <form onSubmit={(event) => void submit(event)} aria-busy={pending}>
-      <PaymentElement />
+      <PaymentElement options={{ layout: 'tabs', paymentMethodOrder: ['upi', 'card'] }} />
       <button disabled={!stripe || pending}>
         {pending ? 'Confirming…' : 'Pay securely'}
       </button>

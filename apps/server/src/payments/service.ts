@@ -36,6 +36,7 @@ export function createPaymentService(
       userId: string,
       revision: number,
       requestId: string,
+      input: { method: 'online' | 'pay_at_pickup'; couponCode?: string | undefined },
     ) {
       const booking = await bookings.findOwner(bookingId, userId);
       if (!booking) throw missing();
@@ -60,8 +61,21 @@ export function createPaymentService(
           'PAYMENT_AMOUNT_UNSUPPORTED',
           'This booking total cannot be processed',
         );
-      const local = await repository.findOrCreate(booking);
+      const code = input.couponCode?.toUpperCase() ?? null;
+      let discountAmountMinor = 0;
+      if (code === 'WELCOME10') discountAmountMinor = Math.min(Math.floor(booking.totalAmountMinor * 0.1), 50_000);
+      else if (code === 'ROAD200' && booking.totalAmountMinor >= 200_000) discountAmountMinor = 20_000;
+      else if (code) throw new AppError(422, 'COUPON_INVALID', 'Coupon is invalid or not eligible');
+      const local = await repository.findOrCreate(booking, {
+        amountMinor: booking.totalAmountMinor - discountAmountMinor,
+        discountAmountMinor,
+        couponCode: code,
+        method: input.method,
+      });
       let payment = local.payment;
+      if (!local.created && (payment.method !== input.method || payment.couponCode !== code))
+        throw new AppError(409, 'PAYMENT_ALREADY_STARTED', 'Payment was already started with different options');
+      if (payment.method === 'pay_at_pickup') return { payment: toCustomerPayment(payment) };
       if (
         payment.status === 'initializing' ||
         payment.status === 'reconciliation_required'

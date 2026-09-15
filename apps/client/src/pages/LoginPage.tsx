@@ -8,6 +8,7 @@ export function LoginPage() {
   const location = useLocation();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const summary = useRef<HTMLParagraphElement>(null);
   const state: unknown = location.state;
   const destination =
@@ -39,47 +40,78 @@ export function LoginPage() {
     }
   }
   return (
-    <main>
-      <h1>Sign in</h1>
-      {auth.error && <p role="alert">{auth.error}</p>}
-      {error && (
-        <p role="alert" tabIndex={-1} ref={summary}>
-          {error}
+    <main id="main" className="auth-page">
+      <section className="auth-panel">
+        <div className="auth-card">
+          <p className="eyebrow">Welcome back</p>
+          <h1>Sign in</h1>
+          <p>
+            Welcome to SecureRide. Manage your journeys, bookings and payments
+            securely.
+          </p>
+          {auth.error && <p role="alert">{auth.error}</p>}
+          {error && (
+            <p role="alert" tabIndex={-1} ref={summary}>
+              {error}
+            </p>
+          )}
+          <form
+            onSubmit={(event) => {
+              void submit(event);
+            }}
+          >
+            <label htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              name="email"
+              type="email"
+              autoComplete="username"
+              required
+              maxLength={254}
+            />
+            <label htmlFor="login-password">Password</label>
+            <div className="password-field">
+              <input
+                id="login-password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <button disabled={pending || auth.status === 'loading'}>
+              {pending ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
+          {auth.status === 'loading' && (
+            <p role="status">
+              Restoring your session…{' '}
+              <button onClick={auth.retry}>Retry restoration</button>
+            </p>
+          )}
+          <div className="auth-links">
+            <Link to="/register">Create an account</Link>
+            <Link to="/">Back home</Link>
+          </div>
+        </div>
+      </section>
+      <aside className="auth-aside" aria-label="Secure booking">
+        <p className="eyebrow">Drive with confidence</p>
+        <h2>Every journey starts with a secure account.</h2>
+        <p>
+          Your access, bookings and payments are protected from sign-in to
+          return.
         </p>
-      )}
-      <form
-        onSubmit={(event) => {
-          void submit(event);
-        }}
-      >
-        <label htmlFor="login-email">Email</label>
-        <input
-          id="login-email"
-          name="email"
-          type="email"
-          autoComplete="username"
-          required
-          maxLength={254}
-        />
-        <label htmlFor="login-password">Password</label>
-        <input
-          id="login-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-        />
-        <button disabled={pending || auth.status === 'loading'}>
-          {pending ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
-      {auth.status === 'loading' && (
-        <p role="status">
-          Restoring your session…{' '}
-          <button onClick={auth.retry}>Retry restoration</button>
-        </p>
-      )}
-      <Link to="/register">Create an account</Link> <Link to="/">Home</Link>
+      </aside>
     </main>
   );
 }

@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SecureRide free-focused Lambda and regional HTTP API deployment without CloudFront.
+
+Parameters:
+  LambdaArtifactBucket:
+    Type: String
+  LambdaArtifactKey:
+    Type: String
+  LambdaArtifactVersion:
+    Type: String
+  RuntimeConfigParameterName:
+    Type: String
+    AllowedPattern: '^/[A-Za-z0-9_.\-/]+$'
+  ExpectedClientOrigin:
+    Type: String
+    AllowedPattern: '^https://[^/]+$'
+
+Resources:
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [POST]
+            AllowedOrigins: [!Ref ExpectedClientOrigin]
+            MaxAge: 300
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireAbandonedQuarantine
+            Status: Enabled
+            Prefix: quarantine/
+            ExpirationInDays: 2
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-api'
+      RetentionInDays: 7
+
+  RuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SecureRideLambdaMinimum
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub '${ApiLogGroup.Arn}:*'
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${RuntimeConfigParameterName}'
+              - Effect: Allow
+                Action: [s3:GetBucketLocation, s3:ListBucket]
+                Resource: !GetAtt MediaBucket.Arn
+                Condition:
+                  StringLike: { 's3:prefix': [quarantine/*, ready/*] }
+              - Effect: Allow
+                Action: [s3:PutObject, s3:GetObject, s3:GetObjectVersion, s3:DeleteObject, s3:DeleteObjectVersion]
+                Resource:
+                  - !Sub '${MediaBucket.Arn}/quarantine/*'
+                  - !Sub '${MediaBucket.Arn}/ready/*'
+
+  ApiFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: ApiLogGroup
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-api'
+      Runtime: nodejs24.x
+      Architectures: [x86_64]
+      Handler: apps/server/dist/lambda.handler
+      MemorySize: 1024
+      Timeout: 29
+      Role: !GetAtt RuntimeRole.Arn
+      Code:
+        S3Bucket: !Ref LambdaArtifactBucket
+        S3Key: !Ref LambdaArtifactKey
+        S3ObjectVersion: !Ref LambdaArtifactVersion
+      Environment:
+        Variables:
+          SECURERIDE_CONFIG_PARAMETER: !Ref RuntimeConfigParameterName
+          EXPECTED_CLIENT_ORIGIN: !Ref ExpectedClientOrigin
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-api'
+      ProtocolType: HTTP
+      DisableExecuteApiEndpoint: false
+
+  ApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ApiFunction.Arn
+      PayloadFormatVersion: '2.0'
+      TimeoutInMillis: 29000
+
+  ApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'ANY /{proxy+}'
+      Target: !Sub 'integrations/${ApiIntegration}'
+
+  ApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: '$default'
+      AutoDeploy: true
+
+  ApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ApiFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*'
+
+Outputs:
+  MediaBucketName: { Value: !Ref MediaBucket }
+  ApiEndpoint: { Value: !GetAtt HttpApi.ApiEndpoint }
+  LambdaFunctionName: { Value: !Ref ApiFunction }

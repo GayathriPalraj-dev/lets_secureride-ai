@@ -32,6 +32,10 @@ function map(r: Row): PaymentRecord {
       model: String(b.model),
     },
     amountMinor: Number(r.amountMinor),
+    originalAmountMinor: Number(r.originalAmountMinor ?? r.amountMinor),
+    discountAmountMinor: Number(r.discountAmountMinor ?? 0),
+    couponCode: r.couponCode ? String(r.couponCode) : null,
+    method: (r.method ?? 'online') as 'online' | 'pay_at_pickup',
     currency: 'INR',
     status: r.status as PaymentStatus,
     providerPaymentIntentId: r.providerPaymentIntentId
@@ -67,6 +71,7 @@ const duplicate = (e: unknown, name: string) =>
 export interface PaymentRepository {
   findOrCreate(
     booking: BookingRecord,
+    pricing: { amountMinor: number; discountAmountMinor: number; couponCode: string | null; method: 'online' | 'pay_at_pickup' },
   ): Promise<{ payment: PaymentRecord; created: boolean }>;
   findByBooking(bookingId: string): Promise<PaymentRecord | null>;
   findOwnerByBooking(
@@ -110,7 +115,7 @@ export function createPaymentRepository(models: Models): PaymentRepository {
     return r ? map(r) : null;
   };
   return {
-    async findOrCreate(b) {
+    async findOrCreate(b, pricing) {
       const existing = await lean(
         models.payments
           .findOne({ bookingId: b.id })
@@ -125,9 +130,13 @@ export function createPaymentRepository(models: Models): PaymentRepository {
             userId: b.userId,
             bookingRevisionAtStart: b.revision,
             bookingSnapshot: b.carSnapshot,
-            amountMinor: b.totalAmountMinor,
+            amountMinor: pricing.amountMinor,
+            originalAmountMinor: b.totalAmountMinor,
+            discountAmountMinor: pricing.discountAmountMinor,
+            couponCode: pricing.couponCode,
+            method: pricing.method,
             currency: 'INR',
-            status: 'initializing',
+            status: pricing.method === 'pay_at_pickup' ? 'pay_at_pickup' : 'initializing',
             createIdempotencyKey: 'pi_' + randomUUID(),
           },
         ]);

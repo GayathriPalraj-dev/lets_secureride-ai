@@ -7,6 +7,7 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const summary = useRef<HTMLParagraphElement>(null);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,45 +41,79 @@ export function RegisterPage() {
     }
   }
   return (
-    <main>
-      <h1>Create an account</h1>
-      {error && (
-        <p role="alert" tabIndex={-1} ref={summary}>
-          {error}
+    <main id="main" className="auth-page">
+      <section className="auth-panel">
+        <div className="auth-card">
+          <p className="eyebrow">Join SecureRide</p>
+          <h1>Create your account</h1>
+          <p>Save your journeys and book with confidence.</p>
+          <div className="auth-benefits" aria-label="Account benefits">
+            <span>✓ Secure booking</span>
+            <span>✓ Easy trip management</span>
+          </div>
+          {error && (
+            <p role="alert" tabIndex={-1} ref={summary}>
+              {error}
+            </p>
+          )}
+          <form
+            onSubmit={(event) => {
+              void submit(event);
+            }}
+          >
+            <label htmlFor="register-email">Email</label>
+            <input
+              id="register-email"
+              name="email"
+              type="email"
+              autoComplete="username"
+              required
+              maxLength={254}
+              placeholder="you@example.com"
+            />
+            <label htmlFor="register-password">Password</label>
+            <div className="password-field">
+              <input
+                id="register-password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                aria-describedby="password-help"
+                placeholder="Create a secure password"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <p id="password-help">
+              Use 15–128 characters. Spaces are allowed. Your password is never
+              trimmed.
+            </p>
+            <button disabled={pending}>
+              {pending ? 'Creating account…' : 'Register'}
+            </button>
+          </form>
+          <div className="auth-links">
+            <span>Already registered?</span>
+            <Link to="/login">Sign in</Link>
+          </div>
+        </div>
+      </section>
+      <aside className="auth-aside" aria-label="Simple car booking">
+        <p className="eyebrow">Ready when you are</p>
+        <h2>The right car is only a few steps away.</h2>
+        <p>
+          Clear pricing, dependable inventory and straightforward booking
+          management.
         </p>
-      )}
-      <form
-        onSubmit={(event) => {
-          void submit(event);
-        }}
-      >
-        <label htmlFor="register-email">Email</label>
-        <input
-          id="register-email"
-          name="email"
-          type="email"
-          autoComplete="username"
-          required
-          maxLength={254}
-        />
-        <label htmlFor="register-password">Password</label>
-        <input
-          id="register-password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          aria-describedby="password-help"
-        />
-        <p id="password-help">
-          Use 15–128 characters. Spaces are allowed. Your password is never
-          trimmed.
-        </p>
-        <button disabled={pending}>
-          {pending ? 'Creating account…' : 'Register'}
-        </button>
-      </form>
-      <Link to="/login">Sign in</Link>
+      </aside>
     </main>
   );
 }

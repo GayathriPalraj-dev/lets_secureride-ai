@@ -5,6 +5,7 @@ import type {
   CarDetail,
   CarListData,
   CarListQuery,
+  CarSummary,
   CarStatus,
   CreateCarRequest,
   UpdateCarRequest,
@@ -19,7 +20,11 @@ function query(values: object) {
     if (value !== undefined && value !== '') result.set(key, String(value));
   return result.size ? `?${result}` : '';
 }
-function car(value: unknown, admin = false): CarDetail | AdminCar {
+function car(
+  value: unknown,
+  options: { admin?: boolean; detail?: boolean } = {},
+): CarSummary | CarDetail | AdminCar {
+  const { admin = false, detail = true } = options;
   if (!record(value)) throw new CarError(503, 'INVALID_RESPONSE');
   const allowed = [
     'id',
@@ -32,8 +37,7 @@ function car(value: unknown, admin = false): CarDetail | AdminCar {
     'fuelType',
     'seats',
     'dailyRate',
-    'description',
-    'features',
+    ...(detail ? ['description', 'features'] : []),
     ...(admin
       ? ['registrationNumber', 'status', 'revision', 'createdAt', 'updatedAt']
       : []),
@@ -49,9 +53,10 @@ function car(value: unknown, admin = false): CarDetail | AdminCar {
     !record(value.dailyRate) ||
     !Number.isInteger(value.dailyRate.amountMinor) ||
     value.dailyRate.currency !== 'INR' ||
-    typeof value.description !== 'string' ||
-    !Array.isArray(value.features) ||
-    !value.features.every((item) => typeof item === 'string')
+    (detail &&
+      (typeof value.description !== 'string' ||
+        !Array.isArray(value.features) ||
+        !value.features.every((item) => typeof item === 'string')))
   )
     throw new CarError(503, 'INVALID_RESPONSE');
   if (
@@ -63,7 +68,7 @@ function car(value: unknown, admin = false): CarDetail | AdminCar {
       typeof value.updatedAt !== 'string')
   )
     throw new CarError(503, 'INVALID_RESPONSE');
-  return value as unknown as CarDetail | AdminCar;
+  return value as unknown as CarSummary | CarDetail | AdminCar;
 }
 function list(value: unknown, admin = false): CarListData | AdminCarListData {
   if (
@@ -75,7 +80,9 @@ function list(value: unknown, admin = false): CarListData | AdminCarListData {
   )
     throw new CarError(503, 'INVALID_RESPONSE');
   return {
-    items: value.items.map((item) => car(item, admin)) as never,
+    items: value.items.map((item) =>
+      car(item, { admin, detail: admin }),
+    ) as never,
     page: value.page as number,
     pageSize: value.pageSize as number,
     totalItems: value.totalItems as number,
@@ -144,6 +151,7 @@ export function createCarRequests() {
     detail: async (token: string, id: string) =>
       car(
         (await request(`cars/${encodeURIComponent(id)}`, 'GET', token)).car,
+        { detail: true },
       ) as CarDetail,
     adminList: async (token: string, values: AdminCarListQuery = {}) =>
       list(
@@ -154,12 +162,12 @@ export function createCarRequests() {
       car(
         (await request(`admin/cars/${encodeURIComponent(id)}`, 'GET', token))
           .car,
-        true,
+        { admin: true, detail: true },
       ) as AdminCar,
     create: async (token: string, body: CreateCarRequest) =>
       car(
         (await request('admin/cars', 'POST', token, body)).car,
-        true,
+        { admin: true, detail: true },
       ) as AdminCar,
     replace: async (
       token: string,
@@ -177,7 +185,7 @@ export function createCarRequests() {
             revision,
           )
         ).car,
-        true,
+        { admin: true, detail: true },
       ) as AdminCar,
     status: async (
       token: string,
@@ -195,7 +203,7 @@ export function createCarRequests() {
             revision,
           )
         ).car,
-        true,
+        { admin: true, detail: true },
       ) as AdminCar,
     remove: async (token: string, id: string, revision: number) =>
       car(
@@ -208,7 +216,7 @@ export function createCarRequests() {
             revision,
           )
         ).car,
-        true,
+        { admin: true, detail: true },
       ) as AdminCar,
   };
 }

@@ -4,6 +4,10 @@ const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const page = z.coerce.number().int().min(1).max(100000);
 const pageSize = z.coerce.number().int().min(1).max(100);
 export const emptyPaymentSchema = z.object({}).strict();
+export const startPaymentSchema = z.object({
+  method: z.enum(['online', 'pay_at_pickup']).default('online'),
+  couponCode: z.string().trim().toUpperCase().min(3).max(24).optional(),
+}).strict();
 export const refundSchema = z
   .object({ reason: z.string().trim().min(1).max(300).optional() })
   .strict();
@@ -17,6 +21,7 @@ export const paymentListSchema = z
         'processing',
         'succeeded',
         'canceled',
+        'pay_at_pickup',
         'reconciliation_required',
         'all',
       ])

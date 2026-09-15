@@ -8,6 +8,7 @@ import {
   paymentRevision,
   parsePayment,
   refundSchema,
+  startPaymentSchema,
 } from './validation.js';
 const ok = (
   response: Response,
@@ -36,12 +37,13 @@ export function createPaymentController(service: PaymentService) {
     };
   return {
     start: wrap(async (request, response) => {
-      parsePayment(emptyPaymentSchema, request.body);
+      const input = parsePayment(startPaymentSchema, request.body);
       const data = await service.start(
         paymentId(request.params.bookingId),
         request.auth!.userId,
         paymentRevision(request.headers['if-match']),
         request.requestId,
+        input,
       );
       etag(response, data.payment);
       ok(response, request.requestId, data, 201);

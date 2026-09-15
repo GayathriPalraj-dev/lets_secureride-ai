@@ -21,15 +21,24 @@ export function createMongooseAdapter(config: DatabaseConfig): DatabaseAdapter {
   return createMongooseContext(config).adapter;
 }
 
-export function createMongooseContext(config: DatabaseConfig) {
+export interface DatabaseConnectionOptions {
+  maxPoolSize?: number;
+  serverSelectionTimeoutMS?: number;
+  connectTimeoutMS?: number;
+}
+
+export function createMongooseContext(
+  config: DatabaseConfig,
+  options: DatabaseConnectionOptions = {},
+) {
   const instance = new Mongoose();
   const connection = instance.createConnection();
   const adapter: DatabaseAdapter = {
     async open() {
       await connection.openUri(config.MONGODB_URI, {
-        serverSelectionTimeoutMS: 30_000,
-        connectTimeoutMS: 10_000,
-        maxPoolSize: 10,
+        serverSelectionTimeoutMS: options.serverSelectionTimeoutMS ?? 30_000,
+        connectTimeoutMS: options.connectTimeoutMS ?? 10_000,
+        maxPoolSize: options.maxPoolSize ?? 10,
         minPoolSize: 0,
         bufferCommands: false,
         autoCreate: false,

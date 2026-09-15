@@ -19,6 +19,7 @@ import { PaymentPage } from '../pages/PaymentPage';
 import { PaymentReturnPage } from '../pages/PaymentReturnPage';
 import { AdminPaymentsPage } from '../pages/AdminPaymentsPage';
 import { AdminCarImagesPage } from '../pages/AdminCarImagesPage';
+import { AdminBookingDetailPage } from '../pages/AdminBookingDetailPage';
 
 export function AppRoutes() {
   return (
@@ -45,6 +46,10 @@ export function AppRoutes() {
           element={<AdminCarImagesPage />}
         />
         <Route path="/admin/bookings" element={<AdminBookingsPage />} />
+        <Route
+          path="/admin/bookings/:id"
+          element={<AdminBookingDetailPage />}
+        />
         <Route path="/admin/payments" element={<AdminPaymentsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />

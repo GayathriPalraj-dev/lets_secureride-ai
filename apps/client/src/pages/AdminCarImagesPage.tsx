@@ -39,7 +39,7 @@ export function AdminCarImagesPage() {
     };
   }, [auth.adminCarImages, carId]);
   return (
-    <main>
+    <main id="main" className="page-shell">
       <h1>Manage car images</h1>
       <Link to="/admin/cars">Back to inventory</Link>
       {state === 'loading' ? (
